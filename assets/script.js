@@ -959,7 +959,7 @@ jQuery(document).ready(function($) {
     // פתיחה/סגירה של פירוט לקוחות בדף הראשי
     $(document).on('click', '.customer-summary', function() {
         const customerId = $(this).data('customer');
-        const relatedRows = $(`.license-row[data-customer='${customerId}'], .kb-notes-row[data-customer='${customerId}']`);
+        const relatedRows = $(`.license-row[data-customer='${customerId}'], .kb-notes-row[data-customer='${customerId}'], .tenant-group-header[data-customer='${customerId}']`);
 
         if (!relatedRows.length) {
             return;
@@ -1017,7 +1017,7 @@ jQuery(document).ready(function($) {
     // פתיחה/סגירה של פירוט לקוחות בדף הראשי
     $(document).on('click', '.customer-summary', function() {
         const customerId = $(this).data('customer');
-        const relatedRows = $(`.license-row[data-customer='${customerId}'], .kb-notes-row[data-customer='${customerId}']`);
+        const relatedRows = $(`.license-row[data-customer='${customerId}'], .kb-notes-row[data-customer='${customerId}'], .tenant-group-header[data-customer='${customerId}']`);
 
         if (!relatedRows.length) {
             return;
@@ -1309,18 +1309,26 @@ jQuery(document).ready(function($) {
       +   '<h4>טננט נוסף #' + index + '</h4>'
       +   '<button type="button" class="m365-btn m365-btn-small kbbm-tenant-remove">הסר</button>'
       + '</div>'
-      + '<div class="kbbm-tenant-grid">'
-      +   '<div class="kb-fortis-field kbbm-tenant-paste">'
-      +     '<label>הדבקת פרטי טננט</label>'
-      +     '<textarea class="kbbm-tenant-paste-src" placeholder="Tenant ID / Application (Client) ID / Client Secret"></textarea>'
-      +     '<div class="kbbm-tenant-actions">'
-      +       '<button type="button" class="m365-btn m365-btn-small kbbm-tenant-paste-fill">מלא שדות מהטקסט</button>'
-      +     '</div>'
+      + '<div class="kbbm-tenant-card-rows">'
+      +   '<label class="kbbm-tenant-row">'
+      +     '<span class="kbbm-tenant-label">Tenant ID:</span>'
+      +     '<input type="text" class="kbbm-tenant-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">'
+      +   '</label>'
+      +   '<label class="kbbm-tenant-row">'
+      +     '<span class="kbbm-tenant-label">Client ID:</span>'
+      +     '<input type="text" class="kbbm-tenant-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">'
+      +   '</label>'
+      +   '<label class="kbbm-tenant-row">'
+      +     '<span class="kbbm-tenant-label">Client Secret:</span>'
+      +     '<input type="text" class="kbbm-tenant-client-secret">'
+      +   '</label>'
+      +   '<label class="kbbm-tenant-row">'
+      +     '<span class="kbbm-tenant-label">Tenant Domain:</span>'
+      +     '<input type="text" class="kbbm-tenant-domain" placeholder="example.onmicrosoft.com">'
+      +   '</label>'
+      +   '<div class="kbbm-inline-actions kbbm-tenant-actions-inline">'
+      +     '<button type="button" class="m365-btn m365-btn-small kbbm-tenant-paste-fill">מלא שדות מהטקסט</button>'
       +   '</div>'
-      +   makeField('Tenant ID','kbbm-tenant-id','xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
-      +   makeField('Client ID','kbbm-tenant-client-id','xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
-      +   makeField('Client Secret','kbbm-tenant-client-secret','')
-      +   makeField('Tenant Domain','kbbm-tenant-domain','example.onmicrosoft.com')
       + '</div>';
     // handlers
     q('.kbbm-tenant-remove', card).addEventListener('click', function(){
@@ -1329,7 +1337,8 @@ jQuery(document).ready(function($) {
       serializeTenants();
     });
     q('.kbbm-tenant-paste-fill', card).addEventListener('click', function(){
-      var txt = (q('.kbbm-tenant-paste-src', card) || {}).value || '';
+      var txt = window.prompt('הדבק כאן את הנתונים מהסקריפט (Tenant ID / Client ID / Client Secret / Tenant Domain):', '');
+      if (!txt) return;
       var p = parseTenantText(txt);
       if (p.tenantId) q('.kbbm-tenant-id', card).value = p.tenantId;
       if (p.clientId) q('.kbbm-tenant-client-id', card).value = p.clientId;

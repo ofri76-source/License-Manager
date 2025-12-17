@@ -174,39 +174,56 @@ if (!empty($licenses)) {
                         <th>חודשי/שנתי</th>
                         <th>פעולות</th>
                     </tr>
-                    <?php foreach ($customer['licenses'] as $license): ?>
-                        <?php
-                            $total_purchased = ($license->quantity > 0) ? $license->quantity : $license->enabled_units;
-                            $available = $total_purchased - $license->consumed_units;
-                            $billing_display = $license->billing_cycle;
-                            if (!empty($license->billing_frequency)) {
-                                $billing_display .= ' / ' . $license->billing_frequency;
+                    <?php
+                        $licenses_by_tenant = array();
+                        foreach ($customer['licenses'] as $license) {
+                            $tenant_label = isset($license->tenant_domain) && $license->tenant_domain !== '' ? $license->tenant_domain : __('לא צוין', 'm365-license-manager');
+                            if (!isset($licenses_by_tenant[$tenant_label])) {
+                                $licenses_by_tenant[$tenant_label] = array();
                             }
-                            $plan_display = isset($license->display_plan_name) ? $license->display_plan_name : $license->plan_name;
-                        ?>
-                        <tr class="license-row detail-row" style="display:none;"
-                            data-id="<?php echo esc_attr($license->id); ?>"
-                            data-customer="<?php echo esc_attr($cid); ?>"
-                            data-billing-cycle="<?php echo esc_attr($license->billing_cycle); ?>"
-                            data-billing-frequency="<?php echo esc_attr($license->billing_frequency); ?>"
-                            data-quantity="<?php echo esc_attr($license->quantity); ?>"
-                            data-enabled="<?php echo esc_attr($license->enabled_units); ?>"
-                            data-notes="<?php echo esc_attr($license->notes); ?>"
-                        >
-                            <td class="plan-name" data-field="plan_name"><?php echo esc_html($plan_display); ?></td>
-                            <td data-field="billing_account"><?php echo esc_html($license->billing_account); ?></td>
-                            <td class="editable-price" data-field="selling_price"><?php echo esc_html($license->selling_price); ?></td>
-                            <td class="editable-price" data-field="cost_price"><?php echo esc_html($license->cost_price); ?></td>
-                            <td data-field="total_purchased"><?php echo esc_html($total_purchased); ?></td>
-                            <td data-field="consumed_units"><?php echo esc_html($license->consumed_units); ?></td>
-                            <td data-field="available_units"><?php echo esc_html($available); ?></td>
-                            <td data-field="renewal_date"><?php echo esc_html($license->renewal_date); ?></td>
-                            <td data-field="billing_cycle"><?php echo esc_html($billing_display); ?></td>
-                            <td class="actions">
-                                <button type="button" class="m365-btn m365-btn-small m365-btn-secondary edit-license">ערוך</button>
-                                <button type="button" class="m365-btn m365-btn-small m365-btn-danger delete-license" data-id="<?php echo esc_attr($license->id); ?>">מחק</button>
+                            $licenses_by_tenant[$tenant_label][] = $license;
+                        }
+                    ?>
+                    <?php foreach ($licenses_by_tenant as $tenant_label => $tenant_licenses): ?>
+                        <tr class="tenant-group-header detail-row" data-customer="<?php echo esc_attr($cid); ?>" style="display:none;">
+                            <td colspan="10">
+                                <strong>טננט:</strong> <?php echo esc_html($tenant_label); ?>
                             </td>
                         </tr>
+                        <?php foreach ($tenant_licenses as $license): ?>
+                            <?php
+                                $total_purchased = ($license->quantity > 0) ? $license->quantity : $license->enabled_units;
+                                $available = $total_purchased - $license->consumed_units;
+                                $billing_display = $license->billing_cycle;
+                                if (!empty($license->billing_frequency)) {
+                                    $billing_display .= ' / ' . $license->billing_frequency;
+                                }
+                                $plan_display = isset($license->display_plan_name) ? $license->display_plan_name : $license->plan_name;
+                            ?>
+                            <tr class="license-row detail-row" style="display:none;"
+                                data-id="<?php echo esc_attr($license->id); ?>"
+                                data-customer="<?php echo esc_attr($cid); ?>"
+                                data-billing-cycle="<?php echo esc_attr($license->billing_cycle); ?>"
+                                data-billing-frequency="<?php echo esc_attr($license->billing_frequency); ?>"
+                                data-quantity="<?php echo esc_attr($license->quantity); ?>"
+                                data-enabled="<?php echo esc_attr($license->enabled_units); ?>"
+                                data-notes="<?php echo esc_attr($license->notes); ?>"
+                            >
+                                <td class="plan-name" data-field="plan_name"><?php echo esc_html($plan_display); ?></td>
+                                <td data-field="billing_account"><?php echo esc_html($license->billing_account); ?></td>
+                                <td class="editable-price" data-field="selling_price"><?php echo esc_html($license->selling_price); ?></td>
+                                <td class="editable-price" data-field="cost_price"><?php echo esc_html($license->cost_price); ?></td>
+                                <td data-field="total_purchased"><?php echo esc_html($total_purchased); ?></td>
+                                <td data-field="consumed_units"><?php echo esc_html($license->consumed_units); ?></td>
+                                <td data-field="available_units"><?php echo esc_html($available); ?></td>
+                                <td data-field="renewal_date"><?php echo esc_html($license->renewal_date); ?></td>
+                                <td data-field="billing_cycle"><?php echo esc_html($billing_display); ?></td>
+                                <td class="actions">
+                                    <button type="button" class="m365-btn m365-btn-small m365-btn-secondary edit-license">ערוך</button>
+                                    <button type="button" class="m365-btn m365-btn-small m365-btn-danger delete-license" data-id="<?php echo esc_attr($license->id); ?>">מחק</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     <?php endforeach; ?>
                     <tr class="kb-notes-row detail-row" data-customer="<?php echo esc_attr($cid); ?>" style="display:none;">
                         <td colspan="10" class="kb-notes-cell">
