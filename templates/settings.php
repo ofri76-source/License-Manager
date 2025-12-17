@@ -10,6 +10,7 @@
         $license_types  = isset($license_types) ? $license_types : array();
         $log_retention_days = isset($log_retention_days) ? intval($log_retention_days) : 120;
         $use_test_server = (int) get_option('kbbm_use_test_server', 0);
+        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.18.55';
     ?>
     <div class="m365-nav-links">
         <a href="<?php echo esc_url($main_url); ?>" class="<?php echo $active === 'main' ? 'active' : ''; ?>">ראשי</a>
@@ -43,75 +44,78 @@
             <div id="customer-form-placeholder"></div>
 
             <div id="customer-form-wrapper" class="kbbm-customer-form" style="display:none;">
-                <h3 id="customer-modal-title">הוסף לקוח חדש</h3>
-                <form id="customer-form">
-                        <input type="hidden" id="customer-id" name="id">
+                <h3 id="customer-modal-title">לקוח חדש</h3>
+                <form id="customer-form" class="kbbm-grid-form">
+                    <input type="hidden" id="customer-id" name="id">
 
-                        <div class="form-group customer-lookup">
-                            <label>חיפוש לקוח קיים (מהתוסף המרכזי):</label>
+                    <div class="form-group customer-lookup kbbm-inline-field kbbm-align-top kbbm-span-3">
+                        <label for="customer-lookup">חיפוש לקוח קיים (מהתוסף המרכזי):</label>
+                        <div class="kbbm-field-body">
                             <input type="text" id="customer-lookup" placeholder="התחל להקליד שם או מספר לקוח">
                             <div id="customer-lookup-results" class="customer-lookup-results"></div>
                             <small class="customer-lookup-hint">הקלד כל חלק מהמחרוזת ולחץ על התוצאה כדי למלא את הטופס.</small>
                         </div>
+                    </div>
 
-                        <div class="form-group">
-                            <label>מספר לקוח:</label>
-                            <input type="text" id="customer-number" name="customer_number">
-                        </div>
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-number">מספר לקוח:</label>
+                        <input type="text" id="customer-number" name="customer_number">
+                    </div>
 
-                        <div class="form-group">
-                            <label>שם לקוח:</label>
-                            <input type="text" id="customer-name" name="customer_name">
-                        </div>
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-name">שם לקוח:</label>
+                        <input type="text" id="customer-name" name="customer_name">
+                    </div>
 
-                        <div class="form-group">
-                            <label>Tenant ID:</label>
-                            <input type="text" id="customer-tenant-id" name="tenant_id">
-                        </div>
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-tenant-id">Tenant ID:</label>
+                        <input type="text" id="customer-tenant-id" name="tenant_id">
+                    </div>
 
-                        <div class="form-group">
-                            <label>Client ID:</label>
-                            <input type="text" id="customer-client-id" name="client_id">
-                        </div>
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-client-id">Client ID:</label>
+                        <input type="text" id="customer-client-id" name="client_id">
+                    </div>
 
-                        <div class="form-group">
-                            <label>Client Secret:</label>
-                            <input type="password" id="customer-client-secret" name="client_secret">
-                        </div>
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-client-secret">Client Secret:</label>
+                        <input type="password" id="customer-client-secret" name="client_secret">
+                    </div>
 
-                        <div class="form-group">
-                            <label>Tenant Domain:</label>
-                            <input type="text" id="customer-tenant-domain" name="tenant_domain" placeholder="example.onmicrosoft.com">
-                        </div>
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-tenant-domain">Tenant Domain:</label>
+                        <input type="text" id="customer-tenant-domain" name="tenant_domain" placeholder="example.onmicrosoft.com">
+                    </div>
 
-                        <div id="additional-tenants"></div>
-
-                        <div class="form-group">
-                            <button type="button" id="add-tenant-row" class="m365-btn m365-btn-small">
-                                הוסף טננט נוסף
-                            </button>
-                        </div>
-
-                        <input type="hidden" id="customer-tenants-json" name="tenants" value="[]">
-
-                        <div class="form-group">
-                            <label>הדבקת תוצאות סקריפט/חיבור:</label>
+                    <div class="form-group kbbm-inline-field kbbm-align-top kbbm-span-2">
+                        <label for="customer-paste-source">הדבקת תוצאות סקריפט/חיבור:</label>
+                        <div class="kbbm-field-body">
                             <textarea id="customer-paste-source" placeholder="הדבק כאן את ה-Tenant ID, Client ID, Client Secret ועוד..." rows="4"></textarea>
-                            <button type="button" id="customer-paste-fill" class="m365-btn m365-btn-secondary" style="margin-top:8px;">מלא שדות מהטקסט</button>
+                            <div class="kbbm-inline-actions">
+                                <button type="button" id="customer-paste-fill" class="m365-btn m365-btn-secondary">מלא שדות מהטקסט</button>
+                            </div>
                         </div>
+                    </div>
 
-                        <div class="form-actions">
-                            <button type="submit" class="m365-btn m365-btn-primary">שמור</button>
-                            <button type="button" class="m365-btn m365-modal-cancel">ביטול</button>
-                        </div>
-                    </form>
+                    <div id="additional-tenants"></div>
+
+                    <input type="hidden" id="customer-tenants-json" name="tenants" value="[]">
+
+                    <div class="form-actions kbbm-inline-actions">
+                        <button type="submit" class="m365-btn m365-btn-primary">שמור</button>
+                        <button type="button" id="add-tenant-row" class="m365-btn m365-btn-secondary">
+                            הוסף טננט נוסף
+                        </button>
+                        <button type="button" class="m365-btn m365-modal-cancel">ביטול</button>
+                    </div>
+                </form>
             </div>
 
             <div id="tenant-only-form" class="kbbm-customer-form" style="display:none; margin-top:20px;">
-                <h3>הוסף טננט חדש ללקוח קיים</h3>
-                <form id="tenant-only-form-inner">
-                    <div class="form-group">
-                        <label>בחר לקוח:</label>
+                <h3>טננט נוסף</h3>
+                <form id="tenant-only-form-inner" class="kbbm-grid-form kbbm-tenant-only-grid">
+                    <div class="form-group kbbm-inline-field">
+                        <label for="tenant-only-customer-select">בחר לקוח:</label>
                         <select id="tenant-only-customer-select" required>
                             <option value="">בחר לקוח</option>
                             <?php foreach ($customers as $customer): ?>
@@ -121,23 +125,28 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Tenant ID:</label>
+
+                    <div class="form-group kbbm-inline-field">
+                        <label for="tenant-only-tenant-id">Tenant ID:</label>
                         <input type="text" id="tenant-only-tenant-id" required>
                     </div>
-                    <div class="form-group">
-                        <label>Client ID:</label>
+
+                    <div class="form-group kbbm-inline-field">
+                        <label for="tenant-only-client-id">Client ID:</label>
                         <input type="text" id="tenant-only-client-id">
                     </div>
-                    <div class="form-group">
-                        <label>Client Secret:</label>
+
+                    <div class="form-group kbbm-inline-field">
+                        <label for="tenant-only-client-secret">Client Secret:</label>
                         <input type="password" id="tenant-only-client-secret">
                     </div>
-                    <div class="form-group">
-                        <label>Tenant Domain:</label>
+
+                    <div class="form-group kbbm-inline-field">
+                        <label for="tenant-only-tenant-domain">Tenant Domain:</label>
                         <input type="text" id="tenant-only-tenant-domain" placeholder="example.onmicrosoft.com">
                     </div>
-                    <div class="form-actions">
+
+                    <div class="form-actions kbbm-inline-actions">
                         <button type="submit" class="m365-btn m365-btn-primary">הוסף טננט</button>
                         <button type="button" class="m365-btn m365-modal-cancel" onclick="jQuery('#tenant-only-form').hide();">ביטול</button>
                     </div>
@@ -332,6 +341,8 @@
         </div>
     </div>
 </div>
+
+<div class="m365-version-tag">גרסה <?php echo esc_html($display_version); ?></div>
 
 <div id="license-type-modal" class="m365-modal">
     <div class="m365-modal-content">

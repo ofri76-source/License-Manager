@@ -67,18 +67,12 @@
         '<h4>טננט נוסף #' + idx + '</h4>' +
         '<button type="button" class="m365-btn m365-btn-small kbbm-tenant-remove">הסר</button>' +
       '</div>' +
-      '<div class="kb-fortis-field kbbm-tenant-paste">' +
-        '<label>הדבקת פרטי טננט</label>' +
-        '<textarea class="kbbm-tenant-paste-src" rows="4" placeholder="הדבק כאן Tenant ID / Application (Client) ID / Client Secret ..."></textarea>' +
-        '<div class="kbbm-tenant-actions" style="margin-top:8px;">' +
-          '<button type="button" class="m365-btn m365-btn-small kbbm-tenant-paste-fill">מלא שדות מהטקסט</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="kbbm-tenant-grid">' +
-        '<div class="kb-fortis-field"><label>Tenant ID</label><input type="text" class="kbbm-tenant-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>' +
-        '<div class="kb-fortis-field"><label>Tenant Domain</label><input type="text" class="kbbm-tenant-domain" placeholder="example.onmicrosoft.com"></div>' +
-        '<div class="kb-fortis-field"><label>Client ID</label><input type="text" class="kbbm-tenant-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>' +
-        '<div class="kb-fortis-field"><label>Client Secret</label><input type="text" class="kbbm-tenant-client-secret" placeholder=""></div>' +
+      '<div class="kbbm-tenant-card-rows">' +
+        '<label class="kbbm-tenant-row"><span class="kbbm-tenant-label">Tenant ID:</span><input type="text" class="kbbm-tenant-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></label>' +
+        '<label class="kbbm-tenant-row"><span class="kbbm-tenant-label">Client ID:</span><input type="text" class="kbbm-tenant-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></label>' +
+        '<label class="kbbm-tenant-row"><span class="kbbm-tenant-label">Client Secret:</span><input type="text" class="kbbm-tenant-client-secret" placeholder=""></label>' +
+        '<label class="kbbm-tenant-row"><span class="kbbm-tenant-label">Tenant Domain:</span><input type="text" class="kbbm-tenant-domain" placeholder="example.onmicrosoft.com"></label>' +
+        '<div class="kbbm-inline-actions kbbm-tenant-actions-inline"><button type="button" class="m365-btn m365-btn-small kbbm-tenant-paste-fill">מלא שדות מהטקסט</button></div>' +
       '</div>';
 
     var rm = card.querySelector('.kbbm-tenant-remove');
@@ -89,7 +83,8 @@
 
     var fill = card.querySelector('.kbbm-tenant-paste-fill');
     fill.addEventListener('click', function(){
-      var txt = (card.querySelector('.kbbm-tenant-paste-src') || {}).value || '';
+      var txt = window.prompt('הדבק כאן את הנתונים מהסקריפט (Tenant ID / Client ID / Client Secret / Tenant Domain):', '');
+      if (!txt) return;
       var p = parseTenantText(txt);
       if (p.tenantId) card.querySelector('.kbbm-tenant-id').value = p.tenantId;
       if (p.tenantDomain) card.querySelector('.kbbm-tenant-domain').value = p.tenantDomain;
