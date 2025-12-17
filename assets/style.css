@@ -269,6 +269,10 @@
     background-color: #005a9e;
 }
 
+.tenant-child-row td {
+    background: #f9fbff;
+}
+
 .kbbm-report-table tbody tr.detail-row {
     display: none;
 }

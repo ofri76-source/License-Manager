@@ -51,7 +51,8 @@ jQuery(document).ready(function($) {
             tenant_id: $('#customer-tenant-id').val() || '',
             tenant_domain: $('#customer-tenant-domain').val() || '',
             client_id: $('#customer-client-id').val() || '',
-            client_secret: $('#customer-client-secret').val() || ''
+            client_secret: $('#customer-client-secret').val() || '',
+            api_expiry_date: $('#customer-api-expiry').val() || ''
         };
 
         tenants.push(primary);
@@ -62,7 +63,8 @@ jQuery(document).ready(function($) {
                 tenant_id: row.find('.tenant-id').val() || '',
                 tenant_domain: row.find('.tenant-domain').val() || '',
                 client_id: row.find('.tenant-client-id').val() || '',
-                client_secret: row.find('.tenant-client-secret').val() || ''
+                client_secret: row.find('.tenant-client-secret').val() || '',
+                api_expiry_date: row.find('.tenant-expiry').val() || ''
             });
         });
 
@@ -87,6 +89,10 @@ jQuery(document).ready(function($) {
                 <div class="form-group">
                     <label>Tenant Domain:</label>
                     <input type="text" class="tenant-domain" value="${data.tenant_domain || ''}" placeholder="example.onmicrosoft.com">
+                </div>
+                <div class="form-group">
+                    <label>תוקף חיבור API:</label>
+                    <input type="date" class="tenant-expiry" value="${data.api_expiry_date || ''}">
                 </div>
                 <button type="button" class="m365-btn m365-btn-small m365-btn-danger remove-tenant-row">הסר</button>
             </div>
@@ -591,31 +597,34 @@ jQuery(document).ready(function($) {
                 $('#customer-modal-title').text('עריכת לקוח');
                 $('#customer-id').val(customer.id || '');
                 $('#customer-number').val(customer.customer_number || '');
-                $('#customer-name').val(customer.customer_name || '');
-                $('#customer-tenant-id').val(customer.tenant_id || '');
-                $('#customer-client-id').val(customer.client_id || '');
-                $('#customer-client-secret').val(customer.client_secret || '');
-                $('#customer-tenant-domain').val(customer.tenant_domain || '');
-                $('#customer-paste-source').val('');
-                additionalTenantsContainer.empty();
-                $('#customer-tenants-json').val('[]');
-                if (customer.tenants && customer.tenants.length > 0) {
-                    customer.tenants.forEach(function(tenant, index) {
-                        if (index === 0) {
-                            $('#customer-tenant-id').val(tenant.tenant_id || customer.tenant_id || '');
-                            $('#customer-client-id').val(tenant.client_id || customer.client_id || '');
-                            $('#customer-client-secret').val(tenant.client_secret || customer.client_secret || '');
-                            $('#customer-tenant-domain').val(tenant.tenant_domain || customer.tenant_domain || '');
-                        } else {
-                            addAdditionalTenantRow({
-                                tenant_id: tenant.tenant_id,
-                                client_id: tenant.client_id,
-                                client_secret: tenant.client_secret,
-                                tenant_domain: tenant.tenant_domain
-                            });
-                        }
+        $('#customer-name').val(customer.customer_name || '');
+        $('#customer-tenant-id').val(customer.tenant_id || '');
+        $('#customer-client-id').val(customer.client_id || '');
+        $('#customer-client-secret').val(customer.client_secret || '');
+        $('#customer-tenant-domain').val(customer.tenant_domain || '');
+        $('#customer-api-expiry').val('');
+        $('#customer-paste-source').val('');
+        additionalTenantsContainer.empty();
+        $('#customer-tenants-json').val('[]');
+        if (customer.tenants && customer.tenants.length > 0) {
+            customer.tenants.forEach(function(tenant, index) {
+                if (index === 0) {
+                    $('#customer-tenant-id').val(tenant.tenant_id || customer.tenant_id || '');
+                    $('#customer-client-id').val(tenant.client_id || customer.client_id || '');
+                    $('#customer-client-secret').val(tenant.client_secret || customer.client_secret || '');
+                    $('#customer-tenant-domain').val(tenant.tenant_domain || customer.tenant_domain || '');
+                    $('#customer-api-expiry').val(tenant.api_expiry_date || '');
+                } else {
+                    addAdditionalTenantRow({
+                        tenant_id: tenant.tenant_id,
+                        client_id: tenant.client_id,
+                        client_secret: tenant.client_secret,
+                        tenant_domain: tenant.tenant_domain,
+                        api_expiry_date: tenant.api_expiry_date
                     });
                 }
+            });
+        }
                 serializeTenants();
 
                 const row = $(e.target).closest('tr');
@@ -757,6 +766,35 @@ jQuery(document).ready(function($) {
             }
         }).always(function() {
             btn.prop('disabled', false).text('בדוק חיבור');
+        });
+    });
+
+    // בדיקת חיבור לטננט נוסף
+    $(document).on('click', '.kbbm-test-tenant-connection', function(e) {
+        e.preventDefault();
+
+        const btn = $(this);
+        const tenantRowId = btn.data('tenant-row-id');
+        const statusEl = $(`#tenant-status-${tenantRowId}`);
+
+        if (!tenantRowId) return;
+
+        btn.prop('disabled', true).text('בודק...');
+
+        $.post(m365Ajax.ajaxurl, {
+            action: 'kbbm_test_tenant_connection',
+            nonce: m365Ajax.nonce,
+            tenant_row_id: tenantRowId
+        }, function(response) {
+            const message = response && response.data && response.data.message ? response.data.message : '';
+            if (response && response.success) {
+                updateStatus(statusEl, 'connected', message);
+            } else {
+                updateStatus(statusEl, 'failed', message || 'חיבור נכשל');
+                alert(message || 'חיבור נכשל');
+            }
+        }).always(function() {
+            btn.prop('disabled', false).text('בדוק חיבור טננט');
         });
     });
 

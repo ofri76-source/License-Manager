@@ -37,7 +37,8 @@
         tenant_id: (c.querySelector('.kbbm-tenant-id') || {}).value || '',
         tenant_domain: (c.querySelector('.kbbm-tenant-domain') || {}).value || '',
         client_id: (c.querySelector('.kbbm-tenant-client-id') || {}).value || '',
-        client_secret: (c.querySelector('.kbbm-tenant-client-secret') || {}).value || ''
+        client_secret: (c.querySelector('.kbbm-tenant-client-secret') || {}).value || '',
+        api_expiry_date: (c.querySelector('.kbbm-tenant-expiry') || {}).value || ''
       };
       var any = false, k;
       for (k in t){ if (t.hasOwnProperty(k) && (t[k]||'').trim() !== '') any=true; }
@@ -72,6 +73,7 @@
         '<label class="kbbm-tenant-row"><span class="kbbm-tenant-label">Client ID:</span><input type="text" class="kbbm-tenant-client-id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></label>' +
         '<label class="kbbm-tenant-row"><span class="kbbm-tenant-label">Client Secret:</span><input type="text" class="kbbm-tenant-client-secret" placeholder=""></label>' +
         '<label class="kbbm-tenant-row"><span class="kbbm-tenant-label">Tenant Domain:</span><input type="text" class="kbbm-tenant-domain" placeholder="example.onmicrosoft.com"></label>' +
+        '<label class="kbbm-tenant-row"><span class="kbbm-tenant-label">תוקף חיבור API:</span><input type="date" class="kbbm-tenant-expiry"></label>' +
         '<div class="kbbm-inline-actions kbbm-tenant-actions-inline"><button type="button" class="m365-btn m365-btn-small kbbm-tenant-paste-fill">מלא שדות מהטקסט</button></div>' +
       '</div>';
 

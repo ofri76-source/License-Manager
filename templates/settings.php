@@ -87,6 +87,11 @@
                         <input type="text" id="customer-tenant-domain" name="tenant_domain" placeholder="example.onmicrosoft.com">
                     </div>
 
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-api-expiry">תוקף חיבור API:</label>
+                        <input type="date" id="customer-api-expiry" name="api_expiry_date">
+                    </div>
+
                     <div class="form-group kbbm-inline-field kbbm-align-top kbbm-span-2">
                         <label for="customer-paste-source">הדבקת תוצאות סקריפט/חיבור:</label>
                         <div class="kbbm-field-body">
@@ -160,6 +165,7 @@
                         <th>שם לקוח</th>
                         <th>Tenant ID</th>
                         <th>Client ID</th>
+                        <th>תוקף API</th>
                         <th>סטטוס</th>
                         <th>פעולות</th>
                     </tr>
@@ -178,6 +184,8 @@
                                     $status_raw  = isset($customer->last_connection_status) ? $customer->last_connection_status : 'unknown';
                                     $status_msg  = isset($customer->last_connection_message) ? $customer->last_connection_message : '';
                                     $status_time = isset($customer->last_connection_time) ? $customer->last_connection_time : '';
+                                    $tenants     = M365_LM_Database::get_customer_tenants($customer->id);
+                                    $primary_tenant = $tenants && isset($tenants[0]) ? $tenants[0] : null;
 
                                     $status_class = 'status-unknown';
                                     $status_label = 'לא נבדק';
@@ -194,6 +202,7 @@
                                 <td><?php echo esc_html($customer->customer_name); ?></td>
                                 <td><?php echo esc_html(substr($tenant_id, 0, 20)) . (strlen($tenant_id) > 20 ? '...' : ''); ?></td>
                                 <td><?php echo esc_html(substr($client_id, 0, 20)) . (strlen($client_id) > 20 ? '...' : ''); ?></td>
+                                <td><?php echo esc_html($primary_tenant && !empty($primary_tenant->api_expiry_date) ? $primary_tenant->api_expiry_date : ''); ?></td>
                                 <td>
                                     <span id="connection-status-<?php echo esc_attr($customer->id); ?>" class="connection-status <?php echo esc_attr($status_class); ?>" title="<?php echo esc_attr($status_msg); ?>">
                                         <?php echo esc_html($status_label); ?>
@@ -214,6 +223,25 @@
                                     </button>
                                 </td>
                             </tr>
+                            <?php if (!empty($tenants) && count($tenants) > 1): ?>
+                                <?php foreach ($tenants as $index => $tenant): ?>
+                                    <?php if ($index === 0) { continue; } ?>
+                                    <tr class="tenant-child-row">
+                                        <td colspan="2">טננט נוסף</td>
+                                        <td><?php echo esc_html(substr($tenant->tenant_id, 0, 20)) . (strlen($tenant->tenant_id) > 20 ? '...' : ''); ?></td>
+                                        <td><?php echo esc_html(substr($tenant->client_id, 0, 20)) . (strlen($tenant->client_id) > 20 ? '...' : ''); ?></td>
+                                        <td><?php echo esc_html($tenant->api_expiry_date ?? ''); ?></td>
+                                        <td>
+                                            <span id="tenant-status-<?php echo esc_attr($tenant->id); ?>" class="connection-status status-unknown">לא נבדק</span>
+                                        </td>
+                                        <td>
+                                            <button class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-tenant-connection" data-tenant-row-id="<?php echo esc_attr($tenant->id); ?>">
+                                                בדוק חיבור טננט
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>

@@ -200,10 +200,11 @@ class M365_LM_Admin {
             }
 
             $clean_tenants[] = array(
-                'tenant_id'     => $tenant_id,
-                'client_id'     => sanitize_text_field($tenant['client_id'] ?? ''),
-                'client_secret' => sanitize_textarea_field($tenant['client_secret'] ?? ''),
-                'tenant_domain' => sanitize_text_field($tenant['tenant_domain'] ?? ''),
+                'tenant_id'       => $tenant_id,
+                'client_id'       => sanitize_text_field($tenant['client_id'] ?? ''),
+                'client_secret'   => sanitize_textarea_field($tenant['client_secret'] ?? ''),
+                'tenant_domain'   => sanitize_text_field($tenant['tenant_domain'] ?? ''),
+                'api_expiry_date' => sanitize_text_field($tenant['api_expiry_date'] ?? ''),
             );
         }
 
@@ -258,6 +259,7 @@ class M365_LM_Admin {
                 'client_id'     => sanitize_text_field($tenant->client_id ?? ''),
                 'client_secret' => sanitize_textarea_field($tenant->client_secret ?? ''),
                 'tenant_domain' => sanitize_text_field($tenant->tenant_domain ?? ''),
+                'api_expiry_date' => sanitize_text_field($tenant->api_expiry_date ?? ''),
             );
         }
 
@@ -266,6 +268,7 @@ class M365_LM_Admin {
             'client_id'     => $client_id,
             'client_secret' => $client_secret,
             'tenant_domain' => $tenant_domain,
+            'api_expiry_date' => sanitize_text_field($_POST['api_expiry_date'] ?? ''),
         );
 
         M365_LM_Database::replace_customer_tenants($customer_id, $clean);
