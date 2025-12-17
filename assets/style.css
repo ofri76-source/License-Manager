@@ -252,6 +252,11 @@
     display: table-row;
 }
 
+.kbbm-report-table .tenant-group-header {
+    background: #eef3fb;
+    font-weight: 700;
+}
+
 .kbbm-report-table tbody tr.customer-summary {
     background-color: #0078d4;
     color: #fff;
@@ -572,6 +577,104 @@
     margin-top: 25px;
 }
 
+.kbbm-grid-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px 22px;
+    align-items: start;
+}
+
+.kbbm-grid-form .form-group {
+    margin: 0;
+}
+
+.kbbm-inline-field {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 12px;
+}
+
+.kbbm-inline-field.kbbm-align-top {
+    align-items: flex-start;
+}
+
+.kbbm-inline-field label {
+    margin: 0;
+    white-space: nowrap;
+    min-width: 140px;
+    text-align: right;
+}
+
+.kbbm-field-body {
+    flex: 1;
+    width: 100%;
+}
+
+.kbbm-inline-field input,
+.kbbm-inline-field select,
+.kbbm-inline-field textarea,
+.kbbm-field-body input,
+.kbbm-field-body select,
+.kbbm-field-body textarea {
+    width: 100%;
+    min-height: 44px;
+}
+
+.kbbm-field-body textarea {
+    min-height: 120px;
+}
+
+.kbbm-inline-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 8px;
+}
+
+.kbbm-span-2 {
+    grid-column: span 2;
+}
+
+.kbbm-span-3 {
+    grid-column: span 3;
+}
+
+@media (max-width: 1100px) {
+    .kbbm-span-2,
+    .kbbm-span-3 {
+        grid-column: 1 / -1;
+    }
+}
+
+.kbbm-grid-form .form-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+}
+
+.kbbm-grid-form #additional-tenants {
+    grid-column: 1 / -1;
+}
+
+.kbbm-grid-form .customer-lookup .customer-lookup-results {
+    width: 100%;
+}
+
+.kbbm-customer-form .kbbm-grid-form {
+    gap: 14px 18px;
+}
+
+.kbbm-customer-form h3 {
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+.kbbm-grid-form .kbbm-inline-field input[type="text"],
+.kbbm-grid-form .kbbm-inline-field input[type="password"] {
+    background: #fff;
+}
+
 /* טאבים */
 .m365-settings-tabs {
     display: flex;
@@ -651,6 +754,16 @@
     border-radius: 4px;
     font-size: 14px;
     min-width: 200px;
+}
+
+.m365-version-tag {
+    margin: 20px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid #e1dfdd;
+    text-align: center;
+    color: #605e5c;
+    font-weight: 600;
+    font-size: 12px;
 }
 
 /* Responsive */
@@ -845,9 +958,7 @@
 }
 
 .kbbm-customer-form form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
+    margin-top: 12px;
 }
 
 .kbbm-customer-form .form-actions {
@@ -884,11 +995,11 @@
   clear:both !important;
   float:none !important;
   box-sizing:border-box;
-  border:1px solid #e6e6e6;
+  border:1px solid #e0e0e0;
   border-radius:10px;
-  padding:14px;
-  background:#fff;
-  margin:14px 0;
+  padding:18px 16px;
+  background:#fbfbfb;
+  margin:18px 0;
 }
 
 #additional-tenants .kbbm-tenant-card .kbbm-tenant-card-header{
@@ -896,46 +1007,47 @@
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  margin-bottom:10px;
+  margin-bottom:14px;
 }
 
 #additional-tenants .kbbm-tenant-card .kbbm-tenant-card-header h4{
   margin:0;
-  font-size:15px;
+  font-size:16px;
+  color:#323130;
 }
 
-#additional-tenants .kbbm-tenant-grid{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap:14px;
-  align-items:start;
-}
-
-#additional-tenants .kbbm-tenant-grid .kb-fortis-field{
-  margin:0;
-}
-
-#additional-tenants .kbbm-tenant-grid .kb-fortis-field label{
-  display:block;
-  font-weight:600;
-  margin-bottom:6px;
-}
-
-#additional-tenants .kbbm-tenant-grid input,
-#additional-tenants .kbbm-tenant-grid textarea{
-  width:100%;
-  box-sizing:border-box;
-}
-
-#additional-tenants .kbbm-tenant-paste{
-  grid-column: 1 / -1;
-}
-
-#additional-tenants .kbbm-tenant-actions{
-  margin-top:8px;
+#additional-tenants .kbbm-tenant-card-rows{
   display:flex;
-  gap:8px;
+  flex-direction:column;
+  gap:12px;
+}
+
+#additional-tenants .kbbm-tenant-row{
+  display:flex;
   align-items:center;
+  gap:12px;
+  flex-direction:row-reverse;
+  border:1px solid #e8e8e8;
+  background:#fff;
+  padding:10px 12px;
+  border-radius:6px;
+}
+
+#additional-tenants .kbbm-tenant-label{
+  min-width:130px;
+  font-weight:700;
+  color:#323130;
+  text-align:right;
+}
+
+#additional-tenants .kbbm-tenant-row input{
+  flex:1;
+  min-height:42px;
+}
+
+#additional-tenants .kbbm-tenant-actions-inline{
+  justify-content:flex-start;
+  padding:0 2px;
 }
 
 @media (max-width: 1100px){
