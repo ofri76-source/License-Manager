@@ -19,6 +19,7 @@ class M365_LM_Shortcodes {
         add_action('wp_ajax_m365_save_license', array($this, 'ajax_save_license'));
         add_action('wp_ajax_m365_save_license_type', array($this, 'ajax_save_license_type'));
         add_action('wp_ajax_kbbm_test_connection', array($this, 'ajax_test_connection'));
+        add_action('wp_ajax_kbbm_test_tenant_connection', array($this, 'ajax_test_tenant_connection'));
     }
     
     public function enqueue_scripts() {
@@ -250,6 +251,58 @@ class M365_LM_Shortcodes {
         $message = $result['message'] ?? 'Connection failed';
         M365_LM_Database::update_connection_status($customer_id, 'failed', $message);
         M365_LM_Database::log_event('error', 'test_connection', $message, $customer_id, $result);
+
+        wp_send_json_error(array(
+            'status'  => 'failed',
+            'message' => $message,
+            'time'    => current_time('mysql'),
+        ));
+    }
+
+    public function ajax_test_tenant_connection() {
+        check_ajax_referer('m365_nonce', 'nonce');
+
+        $tenant_row_id = intval($_POST['tenant_row_id'] ?? 0);
+        if (!$tenant_row_id) {
+            wp_send_json_error(array('message' => 'טננט לא נמצא'));
+        }
+
+        $tenant = M365_LM_Database::get_tenant_by_id($tenant_row_id);
+        if (!$tenant) {
+            wp_send_json_error(array('message' => 'טננט לא נמצא'));
+        }
+
+        $customer_id = intval($tenant->customer_id);
+        $tenant_id   = $tenant->tenant_id ?? '';
+        $client_id   = $tenant->client_id ?? '';
+        $client_secret = $tenant->client_secret ?? '';
+
+        if (empty($tenant_id) || empty($client_id) || empty($client_secret)) {
+            M365_LM_Database::log_event('error', 'test_tenant_connection', 'חסרים פרטי Tenant/Client להגדרת חיבור', $customer_id, $tenant);
+            wp_send_json_error(array('message' => 'חסרים פרטי Tenant/Client להגדרת חיבור'));
+        }
+
+        $api = new M365_LM_API_Connector(
+            $tenant_id,
+            $client_id,
+            $client_secret
+        );
+
+        $result = $api->test_connection();
+
+        if (!empty($result['success'])) {
+            $message = $result['message'] ?? 'Connected';
+            M365_LM_Database::log_event('info', 'test_tenant_connection', $message, $customer_id, $result);
+
+            wp_send_json_success(array(
+                'status'  => 'connected',
+                'message' => $message,
+                'time'    => current_time('mysql'),
+            ));
+        }
+
+        $message = $result['message'] ?? 'Connection failed';
+        M365_LM_Database::log_event('error', 'test_tenant_connection', $message, $customer_id, $result);
 
         wp_send_json_error(array(
             'status'  => 'failed',
