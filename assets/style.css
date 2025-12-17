@@ -572,6 +572,89 @@
     margin-top: 25px;
 }
 
+.kbbm-grid-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px 22px;
+    align-items: start;
+}
+
+.kbbm-grid-form .form-group {
+    margin: 0;
+}
+
+.kbbm-inline-field {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 12px;
+}
+
+.kbbm-inline-field.kbbm-align-top {
+    align-items: flex-start;
+}
+
+.kbbm-inline-field label {
+    margin: 0;
+    white-space: nowrap;
+    min-width: 140px;
+    text-align: right;
+}
+
+.kbbm-field-body {
+    flex: 1;
+    width: 100%;
+}
+
+.kbbm-inline-field input,
+.kbbm-inline-field select,
+.kbbm-inline-field textarea,
+.kbbm-field-body input,
+.kbbm-field-body select,
+.kbbm-field-body textarea {
+    width: 100%;
+}
+
+.kbbm-field-body textarea {
+    min-height: 110px;
+}
+
+.kbbm-inline-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 8px;
+}
+
+.kbbm-span-2 {
+    grid-column: span 2;
+}
+
+.kbbm-span-3 {
+    grid-column: span 3;
+}
+
+@media (max-width: 1100px) {
+    .kbbm-span-2,
+    .kbbm-span-3 {
+        grid-column: 1 / -1;
+    }
+}
+
+.kbbm-grid-form .form-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+}
+
+.kbbm-grid-form #additional-tenants {
+    grid-column: 1 / -1;
+}
+
+.kbbm-grid-form .customer-lookup .customer-lookup-results {
+    width: 100%;
+}
+
 /* טאבים */
 .m365-settings-tabs {
     display: flex;
@@ -651,6 +734,16 @@
     border-radius: 4px;
     font-size: 14px;
     min-width: 200px;
+}
+
+.m365-version-tag {
+    margin: 20px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid #e1dfdd;
+    text-align: center;
+    color: #605e5c;
+    font-weight: 600;
+    font-size: 12px;
 }
 
 /* Responsive */
@@ -845,9 +938,7 @@
 }
 
 .kbbm-customer-form form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
+    margin-top: 12px;
 }
 
 .kbbm-customer-form .form-actions {
