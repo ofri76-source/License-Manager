@@ -19,6 +19,7 @@ class M365_LM_Shortcodes {
         add_action('wp_ajax_m365_save_license', array($this, 'ajax_save_license'));
         add_action('wp_ajax_m365_save_license_type', array($this, 'ajax_save_license_type'));
         add_action('wp_ajax_kbbm_test_connection', array($this, 'ajax_test_connection'));
+        add_action('wp_ajax_kbbm_test_tenant_connection', array($this, 'ajax_test_tenant_connection'));
     }
     
     public function enqueue_scripts() {
@@ -160,6 +161,7 @@ class M365_LM_Shortcodes {
         }
 
         $licenses_saved = 0;
+        $tenant_logs = array();
         foreach ($tenants as $tenant) {
             if (empty($tenant->tenant_id) || empty($tenant->client_id) || empty($tenant->client_secret)) {
                 M365_LM_Database::log_event('error', 'sync_licenses', 'חסרים פרטי Tenant/Client להגדרת חיבור', $customer_id, $tenant);
@@ -180,6 +182,7 @@ class M365_LM_Shortcodes {
                 continue;
             }
 
+            $tenant_count = 0;
             foreach ($skus['skus'] as $sku) {
                 $data = array(
                     'customer_id'      => $customer_id,
@@ -193,16 +196,34 @@ class M365_LM_Shortcodes {
                     'cost_price'       => 0,
                     'selling_price'    => 0,
                     'status_text'      => $sku['status'] ?? '',
-                    'tenant_domain'    => isset($tenant->tenant_domain) ? $tenant->tenant_domain : '',
+                    'tenant_domain'    => !empty($tenant->tenant_domain) ? $tenant->tenant_domain : ($tenant->tenant_id ?? ''),
                 );
 
                 M365_LM_Database::upsert_license_by_sku($customer_id, $sku['sku_id'], $data, $data['tenant_domain']);
                 $licenses_saved++;
+                $tenant_count++;
             }
+
+            $tenant_logs[] = array(
+                'tenant_id'   => $tenant->tenant_id,
+                'tenant_domain' => $tenant->tenant_domain ?? '',
+                'licenses_saved' => $tenant_count,
+            );
+            M365_LM_Database::log_event(
+                'info',
+                'sync_licenses_tenant',
+                'סנכרון טננט הושלם',
+                $customer_id,
+                array(
+                    'tenant_id' => $tenant->tenant_id,
+                    'tenant_domain' => $tenant->tenant_domain ?? '',
+                    'licenses_saved' => $tenant_count,
+                )
+            );
         }
 
         M365_LM_Database::update_connection_status($customer_id, 'connected', 'Last sync successful');
-        M365_LM_Database::log_event('info', 'sync_licenses', 'סנכרון רישוי הושלם בהצלחה', $customer_id, array('licenses_saved' => $licenses_saved));
+        M365_LM_Database::log_event('info', 'sync_licenses', 'סנכרון רישוי הושלם בהצלחה', $customer_id, array('licenses_saved' => $licenses_saved, 'tenants' => $tenant_logs));
 
         return array('success' => true, 'message' => 'סנכרון הושלם בהצלחה', 'count' => $licenses_saved);
     }
@@ -250,6 +271,58 @@ class M365_LM_Shortcodes {
         $message = $result['message'] ?? 'Connection failed';
         M365_LM_Database::update_connection_status($customer_id, 'failed', $message);
         M365_LM_Database::log_event('error', 'test_connection', $message, $customer_id, $result);
+
+        wp_send_json_error(array(
+            'status'  => 'failed',
+            'message' => $message,
+            'time'    => current_time('mysql'),
+        ));
+    }
+
+    public function ajax_test_tenant_connection() {
+        check_ajax_referer('m365_nonce', 'nonce');
+
+        $tenant_row_id = intval($_POST['tenant_row_id'] ?? 0);
+        if (!$tenant_row_id) {
+            wp_send_json_error(array('message' => 'טננט לא נמצא'));
+        }
+
+        $tenant = M365_LM_Database::get_tenant_by_id($tenant_row_id);
+        if (!$tenant) {
+            wp_send_json_error(array('message' => 'טננט לא נמצא'));
+        }
+
+        $customer_id = intval($tenant->customer_id);
+        $tenant_id   = $tenant->tenant_id ?? '';
+        $client_id   = $tenant->client_id ?? '';
+        $client_secret = $tenant->client_secret ?? '';
+
+        if (empty($tenant_id) || empty($client_id) || empty($client_secret)) {
+            M365_LM_Database::log_event('error', 'test_tenant_connection', 'חסרים פרטי Tenant/Client להגדרת חיבור', $customer_id, $tenant);
+            wp_send_json_error(array('message' => 'חסרים פרטי Tenant/Client להגדרת חיבור'));
+        }
+
+        $api = new M365_LM_API_Connector(
+            $tenant_id,
+            $client_id,
+            $client_secret
+        );
+
+        $result = $api->test_connection();
+
+        if (!empty($result['success'])) {
+            $message = $result['message'] ?? 'Connected';
+            M365_LM_Database::log_event('info', 'test_tenant_connection', $message, $customer_id, $result);
+
+            wp_send_json_success(array(
+                'status'  => 'connected',
+                'message' => $message,
+                'time'    => current_time('mysql'),
+            ));
+        }
+
+        $message = $result['message'] ?? 'Connection failed';
+        M365_LM_Database::log_event('error', 'test_tenant_connection', $message, $customer_id, $result);
 
         wp_send_json_error(array(
             'status'  => 'failed',
