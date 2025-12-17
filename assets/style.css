@@ -1,0 +1,947 @@
+/* כללי */
+.m365-lm-container {
+    direction: rtl;
+    width: 100%;
+    max-width: 100vw;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 0;
+    box-shadow: none;
+    position: relative;
+    left: auto;
+    right: auto;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.kbbm-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-right: 0;
+    margin-top: 40px;
+}
+
+.kbbm-wrap .m365-lm-container,
+.kbbm-wrap .wrap,
+.kbbm-wrap .container,
+.kbbm-wrap .row,
+#wpbody-content > .wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0;
+}
+
+#wpcontent {
+    padding-left: 0;
+}
+
+#wpbody-content {
+    padding: 0 0 20px 0;
+}
+
+.kbbm-wrap .m365-lm-container {
+    margin: 0;
+    padding: 10px 20px;
+}
+
+.m365-table-wrapper,
+.m365-table {
+    width: 100%;
+}
+
+.kbbm-license-types-table th,
+.kbbm-license-types-table td {
+    text-align: center;
+}
+
+.m365-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #0078d4;
+}
+
+.m365-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.m365-header h2 {
+    margin: 0;
+    color: #0078d4;
+    font-size: 28px;
+}
+
+.kbbm-period-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.kbbm-period-form label {
+    margin: 0;
+    font-weight: 600;
+    color: #323130;
+}
+
+.kbbm-empty-summary {
+    opacity: 0;
+}
+
+.m365-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.m365-nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.m365-nav-links a {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    background: #f3f2f1;
+    color: #323130;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.m365-nav-links a:hover {
+    background: #e1dfdd;
+}
+
+.m365-nav-links a.active {
+    background: #0078d4;
+    color: #fff;
+    border-color: #0078d4;
+}
+
+/* כפתורים */
+.m365-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.m365-btn-primary {
+    background: #0078d4;
+    color: white;
+}
+
+.m365-btn-primary:hover {
+    background: #005a9e;
+}
+
+.m365-btn-secondary {
+    background: #f3f2f1;
+    color: #323130;
+    border: 1px solid #ddd;
+}
+
+.m365-btn-secondary:hover,
+.m365-btn-secondary.active {
+    background: #e1dfdd;
+    color: #000;
+}
+
+.m365-btn-success {
+    background: #107c10;
+    color: white;
+}
+
+.m365-btn-success:hover {
+    background: #0b5a0b;
+}
+
+.m365-btn-danger {
+    background: #d13438;
+    color: white;
+}
+
+.m365-btn-danger:hover {
+    background: #a52a2d;
+}
+
+.m365-btn-small {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+/* טבלה עם כותרות אנכיות */
+.m365-table-wrapper {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.m365-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    table-layout: fixed;
+}
+
+.m365-table tbody td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: center;
+    word-break: break-word;
+}
+
+.m365-table tbody tr:hover {
+    background-color: #f3f2f1;
+}
+
+.m365-table .plan-name {
+    text-align: right;
+    font-weight: 500;
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.m365-table .editable {
+    cursor: pointer;
+    position: relative;
+}
+
+.m365-table .editable:hover {
+    background-color: #e1dfdd;
+}
+
+.m365-table th,
+.m365-table td {
+    padding: 4px 6px;
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.m365-table .actions {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.kbbm-report-table thead .customer-header-row {
+    background-color: #003b75;
+    color: #fff;
+}
+
+.kbbm-report-table .plans-header-row {
+    background-color: #cfe8ff;
+    font-weight: bold;
+    display: none;
+}
+
+.kbbm-report-table .plans-header-row.visible {
+    display: table-row;
+}
+
+.kbbm-report-table tbody tr.customer-summary {
+    background-color: #0078d4;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.kbbm-report-table tbody tr.customer-summary:hover,
+.kbbm-report-table tbody tr.customer-summary.open {
+    background-color: #005a9e;
+}
+
+.kbbm-report-table tbody tr.detail-row {
+    display: none;
+}
+
+.kbbm-report-table tbody tr.license-row:nth-of-type(even) {
+    background-color: #e9f3ff;
+}
+
+.kbbm-report-table tbody tr.license-row:nth-of-type(odd) {
+    background-color: #f6f9ff;
+}
+
+.kbbm-report-table td.editable-price {
+    cursor: pointer;
+}
+
+.inline-price-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+}
+
+.kb-notes-row .kb-notes-cell {
+    direction: rtl;
+    text-align: right;
+    background-color: #cfe8ff;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+.kb-notes-row strong {
+    margin-left: 5px;
+}
+
+.kbbm-main-table {
+    margin-top: 20px;
+    border: 1px solid #dfe1e6;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8f9fb;
+}
+
+.kbbm-main-header,
+.kbbm-main-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 12px 16px;
+}
+
+.kbbm-main-header {
+    background: #0b3a5d;
+    color: #fff;
+    font-weight: 700;
+}
+
+.kbbm-main-row {
+    background: #0f4f7f;
+    color: #fff;
+    cursor: pointer;
+    border-top: 1px solid #dfe1e6;
+    transition: background 0.2s ease;
+}
+
+.kbbm-main-row:hover,
+.kbbm-main-row.open {
+    background: #0c3e65;
+}
+
+.kbbm-details {
+    display: none;
+    background: #e8f1fa;
+    border-top: 1px solid #dfe1e6;
+}
+
+.kbbm-details-inner {
+    padding: 12px 16px 20px;
+}
+
+.kbbm-details-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.kbbm-details-table th,
+.kbbm-details-table td {
+    border: 1px solid #dfe1e6;
+    padding: 10px;
+    text-align: center;
+}
+
+.kbbm-details-table th {
+    background: #f3f6fb;
+    font-weight: 600;
+}
+
+.kbbm-no-data {
+    text-align: center;
+    padding: 20px;
+    color: #556;
+    font-weight: 500;
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px !important;
+    color: #666;
+    font-style: italic;
+}
+
+/* הודעות */
+.m365-message {
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.m365-message.success {
+    background: #dff6dd;
+    color: #107c10;
+    border: 1px solid #107c10;
+}
+
+.m365-message.error {
+    background: #fde7e9;
+    color: #d13438;
+    border: 1px solid #d13438;
+}
+
+/* Modal */
+.m365-modal,
+.kbbm-modal-overlay {
+    display: none;
+    position: fixed;
+    z-index: 99999 !important;
+    left: 0;
+    top: 0 !important;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.m365-modal-content,
+.kbbm-modal {
+    background-color: #fff;
+    position: relative;
+    margin: 40px auto;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 100000 !important;
+}
+
+.kbbm-modal {
+    margin-top: 40px;
+}
+
+.kbbm-script-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.kbbm-script-meta .meta-box {
+    background: #f3f2f1;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.kbbm-script-meta .meta-label {
+    display: block;
+    font-weight: 700;
+    color: #323130;
+    margin-bottom: 4px;
+}
+
+.connection-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    background: #f3f2f1;
+    color: #605e5c;
+}
+
+.connection-status.status-connected {
+    background: #dff6dd;
+    color: #0f7b0f;
+    border-color: #0f7b0f;
+}
+
+.connection-status.status-failed {
+    background: #fde7e9;
+    color: #a4262c;
+    border-color: #a4262c;
+}
+
+.connection-status.status-unknown {
+    background: #f3f2f1;
+    color: #605e5c;
+    border-color: #ddd;
+}
+
+.status-time {
+    font-size: 11px;
+    color: #605e5c;
+    margin-top: 4px;
+}
+
+.m365-modal-close {
+    position: absolute;
+    left: 15px;
+    top: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #666;
+}
+
+.m365-modal-close:hover {
+    color: #000;
+}
+
+.m365-modal h3 {
+    margin-top: 0;
+    color: #0078d4;
+}
+
+/* טפסים */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.customer-lookup .customer-lookup-results {
+    margin-top: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.customer-lookup .customer-lookup-results .customer-result {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f2f1;
+}
+
+.customer-lookup .customer-lookup-results .customer-result:last-child {
+    border-bottom: none;
+}
+
+.customer-lookup .customer-lookup-results .customer-result:hover {
+    background: #f3f2f1;
+}
+
+.customer-lookup-hint {
+    display: block;
+    margin-top: 6px;
+    color: #605e5c;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #323130;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #0078d4;
+    box-shadow: 0 0 0 2px rgba(0,120,212,0.2);
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start;
+    margin-top: 25px;
+}
+
+/* טאבים */
+.m365-settings-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+}
+
+.m365-tab-btn {
+    padding: 12px 24px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.m365-tab-btn:hover {
+    color: #0078d4;
+}
+
+.m365-tab-btn.active {
+    color: #0078d4;
+    border-bottom-color: #0078d4;
+}
+
+.m365-tab-content {
+    display: none;
+}
+
+.m365-tab-content.active {
+    display: block;
+}
+
+.m365-section {
+    background: #f3f2f1;
+    padding: 20px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.m365-section h3 {
+    margin-top: 0;
+    color: #323130;
+}
+
+.section-hint {
+    margin-top: 0;
+    color: #605e5c;
+}
+
+.m365-info-box {
+    background: #fff4ce;
+    border: 1px solid #ffb900;
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.m365-info-box h4 {
+    margin-top: 0;
+    color: #8a6d3b;
+}
+
+.m365-info-box ol {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+/* סלקטים */
+#customer-select,
+#api-customer-select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .m365-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .m365-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .m365-actions select,
+    .m365-actions button {
+        width: 100%;
+    }
+    
+    .m365-table-vertical thead th {
+        height: 120px;
+        font-size: 12px;
+    }
+    
+    .m365-table tbody td {
+        font-size: 12px;
+        padding: 8px;
+    }
+}
+
+
+/* טבלת לוגים */
+.kbbm-log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
+}
+.kbbm-log-table th,
+.kbbm-log-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    vertical-align: top;
+    max-width: 220px;
+}
+.kbbm-log-table th {
+    background: #f0f0f0;
+    text-align: right;
+    position: relative;
+}
+.kbbm-log-table th .kbbm-log-header-filter {
+    margin-top: 6px;
+    display: none;
+}
+.kbbm-log-table th .kbbm-log-header-filter select {
+    width: 100%;
+    font-size: 12px;
+}
+.kbbm-log-table th.filter-open .kbbm-log-header-filter {
+    display: block;
+}
+.kbbm-log-header-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: space-between;
+}
+
+.kbbm-log-filter-toggle {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    color: #555;
+    line-height: 1;
+    padding: 2px 4px;
+}
+
+.kbbm-log-filter-toggle:focus-visible {
+    outline: 1px solid #0078d4;
+    outline-offset: 2px;
+}
+.kbbm-log-table .log-level-error {
+    background: #ffe5e5;
+}
+.kbbm-log-table .log-level-warning {
+    background: #fff7e0;
+}
+.kbbm-log-table .log-level-info {
+    background: #e8f4ff;
+}
+.kbbm-log-message {
+    white-space: pre-wrap;
+}
+.kbbm-log-data {
+    margin-top: 4px;
+    font-size: 11px;
+    max-height: 160px;
+    overflow: auto;
+}
+
+.kbbm-log-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-end;
+    margin: 10px 0 14px;
+}
+
+.kbbm-log-toolbar label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 600;
+    color: #323130;
+}
+
+.kbbm-log-toolbar input,
+.kbbm-log-toolbar select {
+    min-width: 180px;
+}
+
+.kbbm-log-table th.sortable {
+    cursor: pointer;
+}
+
+.kbbm-log-table th.sortable:hover {
+    background: #e6e6e6;
+}
+
+.kb-logs-table {
+    width: 100% !important;
+    table-layout: fixed;
+}
+
+.kb-logs-table th.col-message,
+.kb-logs-table td.col-message {
+    width: 50%;
+    max-width: none;
+}
+
+.kb-logs-table th.col-tenant-domain,
+.kb-logs-table td.col-tenant-domain,
+.kb-logs-table th.col-customer-name,
+.kb-logs-table td.col-customer-name,
+.kb-logs-table th.col-customer-number,
+.kb-logs-table td.col-customer-number {
+    width: 10%;
+}
+
+.kb-logs-table th.col-context,
+.kb-logs-table td.col-context,
+.kb-logs-table th.col-level,
+.kb-logs-table td.col-level {
+    width: 8%;
+}
+
+.kbbm-license-types-table th.col-cost,
+.kbbm-license-types-table td.col-cost,
+.kbbm-license-types-table th.col-sell,
+.kbbm-license-types-table td.col-sell,
+.kbbm-license-types-table th.col-billing,
+.kbbm-license-types-table td.col-billing,
+.kbbm-license-types-table th.col-show-main,
+.kbbm-license-types-table td.col-show-main,
+.kbbm-license-types-table th.col-actions,
+.kbbm-license-types-table td.col-actions {
+    width: 6%;
+    white-space: nowrap;
+}
+
+.kb-logs-table th.col-time,
+.kb-logs-table td.col-time {
+    width: 14%;
+}
+
+
+/* טופס הוספת לקוח בעמוד (ללא פופאפ) */
+.kbbm-customer-form {
+    margin-top: 30px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.kbbm-customer-form h3 {
+    margin-top: 0;
+}
+
+.kbbm-customer-form form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.kbbm-customer-form .form-actions {
+    grid-column: 1 / -1;
+}
+
+.inline-form-row td {
+    background: #f9f9f9;
+    padding: 12px;
+}
+
+.inline-form-row #customer-form-wrapper {
+    margin: 0;
+}
+
+.kbbm-modal-overlay,
+.m365-modal-close {
+    display: none !important;
+}
+
+
+/* === KBBM Additional Tenants Final Layout === */
+#additional-tenants{
+  display:block !important;
+  width:100% !important;
+  clear:both !important;
+  float:none !important;
+  margin-top:18px;
+}
+
+#additional-tenants .kbbm-tenant-card{
+  display:block !important;
+  width:100% !important;
+  clear:both !important;
+  float:none !important;
+  box-sizing:border-box;
+  border:1px solid #e6e6e6;
+  border-radius:10px;
+  padding:14px;
+  background:#fff;
+  margin:14px 0;
+}
+
+#additional-tenants .kbbm-tenant-card .kbbm-tenant-card-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+#additional-tenants .kbbm-tenant-card .kbbm-tenant-card-header h4{
+  margin:0;
+  font-size:15px;
+}
+
+#additional-tenants .kbbm-tenant-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:14px;
+  align-items:start;
+}
+
+#additional-tenants .kbbm-tenant-grid .kb-fortis-field{
+  margin:0;
+}
+
+#additional-tenants .kbbm-tenant-grid .kb-fortis-field label{
+  display:block;
+  font-weight:600;
+  margin-bottom:6px;
+}
+
+#additional-tenants .kbbm-tenant-grid input,
+#additional-tenants .kbbm-tenant-grid textarea{
+  width:100%;
+  box-sizing:border-box;
+}
+
+#additional-tenants .kbbm-tenant-paste{
+  grid-column: 1 / -1;
+}
+
+#additional-tenants .kbbm-tenant-actions{
+  margin-top:8px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+@media (max-width: 1100px){
+  #additional-tenants .kbbm-tenant-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px){
+  #additional-tenants .kbbm-tenant-grid{ grid-template-columns: 1fr; }
+}
+/* === /KBBM Additional Tenants Final Layout === */
