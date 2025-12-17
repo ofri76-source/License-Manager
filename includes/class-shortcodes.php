@@ -196,7 +196,7 @@ class M365_LM_Shortcodes {
                     'cost_price'       => 0,
                     'selling_price'    => 0,
                     'status_text'      => $sku['status'] ?? '',
-                    'tenant_domain'    => isset($tenant->tenant_domain) ? $tenant->tenant_domain : '',
+                    'tenant_domain'    => !empty($tenant->tenant_domain) ? $tenant->tenant_domain : ($tenant->tenant_id ?? ''),
                 );
 
                 M365_LM_Database::upsert_license_by_sku($customer_id, $sku['sku_id'], $data, $data['tenant_domain']);

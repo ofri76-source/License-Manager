@@ -8,7 +8,7 @@ $settings_url = $portal_urls['settings'] ?? 'https://kb.macomp.co.il/?page_id=14
 $logs_url     = $portal_urls['logs'] ?? 'https://kb.macomp.co.il/?page_id=14285';
 $alerts_url   = $portal_urls['alerts'] ?? 'https://kb.macomp.co.il/?page_id=14290';
 $active       = isset($active) ? $active : '';
-$display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '172010';
+$display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.20.27';
 
 $customer_flags = array();
 if (!empty($customers)) {
@@ -197,7 +197,8 @@ function m365_lm_render_customer_table($grouped_customers, $billing_period_label
                 <?php
                     $licenses_by_tenant = array();
                     foreach ($customer['licenses'] as $license) {
-                        $tenant_label = isset($license->tenant_domain) && $license->tenant_domain !== '' ? $license->tenant_domain : __('לא צוין', 'm365-license-manager');
+                        $tenant_label_raw = isset($license->tenant_domain) && $license->tenant_domain !== '' ? $license->tenant_domain : '';
+                        $tenant_label = $tenant_label_raw !== '' ? $tenant_label_raw : __('לא צוין', 'm365-license-manager');
                         if (!isset($licenses_by_tenant[$tenant_label])) {
                             $licenses_by_tenant[$tenant_label] = array();
                         }
@@ -219,7 +220,7 @@ function m365_lm_render_customer_table($grouped_customers, $billing_period_label
                                 $billing_display .= ' / ' . $license->billing_frequency;
                             }
                             $plan_display = isset($license->display_plan_name) ? $license->display_plan_name : $license->plan_name;
-                            $plan_display_short = mb_strlen($plan_display) > 30 ? mb_substr($plan_display, 0, 30) . '…' : $plan_display;
+                            $plan_display_short = mb_strlen($plan_display) > 40 ? mb_substr($plan_display, 0, 40) . '…' : $plan_display;
                         ?>
                         <tr class="license-row detail-row" style="display:none;"
                             data-group="<?php echo esc_attr($table_group); ?>"

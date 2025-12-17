@@ -242,7 +242,7 @@
     color: #fff;
 }
 
-.kbbm-report-table col.col-plan { width: 36%; }
+.kbbm-report-table col.col-plan { width: 30%; }
 .kbbm-report-table col.col-billing-account { width: 14%; }
 .kbbm-report-table col.col-sell { width: 9%; }
 .kbbm-report-table col.col-cost { width: 9%; }

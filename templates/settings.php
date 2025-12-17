@@ -10,7 +10,7 @@
         $license_types  = isset($license_types) ? $license_types : array();
         $log_retention_days = isset($log_retention_days) ? intval($log_retention_days) : 120;
         $use_test_server = (int) get_option('kbbm_use_test_server', 0);
-        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '172010';
+        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.20.27';
     ?>
     <div class="m365-nav-links">
         <a href="<?php echo esc_url($main_url); ?>" class="<?php echo $active === 'main' ? 'active' : ''; ?>">ראשי</a>
@@ -222,13 +222,13 @@
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <button class="m365-btn m365-btn-small edit-customer kbbm-edit-customer m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="ערוך" title="ערוך">
+                                    <button type="button" class="m365-btn m365-btn-small edit-customer kbbm-edit-customer m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="ערוך" title="ערוך">
                                         ✏️
                                     </button>
-                                    <button class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-connection m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="בדוק חיבור" title="בדוק חיבור">
+                                    <button type="button" class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-connection m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="בדוק חיבור" title="בדוק חיבור">
                                         🔗
                                     </button>
-                                    <button class="m365-btn m365-btn-small m365-btn-danger delete-customer kbbm-delete-customer m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="מחק" title="מחק">
+                                    <button type="button" class="m365-btn m365-btn-small m365-btn-danger delete-customer kbbm-delete-customer m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="מחק" title="מחק">
                                         🗑️
                                     </button>
                                 </td>
@@ -245,7 +245,7 @@
                                             <span id="tenant-status-<?php echo esc_attr($tenant->id); ?>" class="connection-status status-unknown">לא נבדק</span>
                                         </td>
                                         <td>
-                                            <button class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-tenant-connection m365-icon-btn" data-tenant-row-id="<?php echo esc_attr($tenant->id); ?>" aria-label="בדוק חיבור טננט" title="בדוק חיבור טננט">
+                                            <button type="button" class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-tenant-connection m365-icon-btn" data-tenant-row-id="<?php echo esc_attr($tenant->id); ?>" aria-label="בדוק חיבור טננט" title="בדוק חיבור טננט">
                                                 🔗
                                             </button>
                                         </td>
