@@ -242,6 +242,17 @@
     color: #fff;
 }
 
+.kbbm-report-table col.col-plan { width: 36%; }
+.kbbm-report-table col.col-billing-account { width: 14%; }
+.kbbm-report-table col.col-sell { width: 9%; }
+.kbbm-report-table col.col-cost { width: 9%; }
+.kbbm-report-table col.col-total-purchased,
+.kbbm-report-table col.col-consumed,
+.kbbm-report-table col.col-available { width: 4.5%; }
+.kbbm-report-table col.col-renewal { width: 9%; }
+.kbbm-report-table col.col-cycle { width: 4.5%; }
+.kbbm-report-table col.col-actions { width: 5%; }
+
 .kbbm-report-table .plans-header-row {
     background-color: #cfe8ff;
     font-weight: bold;

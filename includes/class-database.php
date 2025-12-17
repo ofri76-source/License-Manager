@@ -17,6 +17,7 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            self_paying tinyint(1) DEFAULT 0,
             last_connection_status varchar(20) DEFAULT 'unknown',
             last_connection_message text DEFAULT NULL,
             last_connection_time datetime DEFAULT NULL,
@@ -36,6 +37,7 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            self_paying tinyint(1) DEFAULT 0,
             last_connection_status varchar(20) DEFAULT 'unknown',
             last_connection_message text DEFAULT NULL,
             last_connection_time datetime DEFAULT NULL,
@@ -170,6 +172,8 @@ class M365_LM_Database {
         self::maybe_add_column($types_table, 'display_name', "display_name VARCHAR(255) DEFAULT '' AFTER name");
         self::maybe_add_column($types_table, 'show_in_main', "show_in_main TINYINT(1) DEFAULT 1 AFTER default_billing_frequency");
         self::maybe_add_column($kb_customer_tenants, 'api_expiry_date', "api_expiry_date DATE DEFAULT NULL AFTER client_secret");
+        self::maybe_add_column($kb_customers_table, 'self_paying', "self_paying TINYINT(1) DEFAULT 0 AFTER tenant_domain");
+        self::maybe_add_column($table_customers, 'self_paying', "self_paying TINYINT(1) DEFAULT 0 AFTER tenant_domain");
     }
     
     // פונקציות CRUD ללקוחות

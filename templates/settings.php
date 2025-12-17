@@ -88,6 +88,16 @@
                     </div>
 
                     <div class="form-group kbbm-inline-field">
+                        <label for="customer-self-paying">לקוח משלם בעצמו:</label>
+                        <div class="kbbm-field-body">
+                            <label style="display:flex;align-items:center;gap:8px;">
+                                <input type="checkbox" id="customer-self-paying" name="self_paying" value="1">
+                                <span>העבר לרשימת לקוחות משלמים</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group kbbm-inline-field">
                         <label for="customer-api-expiry">תוקף חיבור API:</label>
                         <input type="date" id="customer-api-expiry" name="api_expiry_date">
                     </div>

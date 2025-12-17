@@ -179,7 +179,8 @@ class M365_LM_Admin {
             'tenant_id' => sanitize_text_field($_POST['tenant_id']),
             'client_id' => sanitize_text_field($_POST['client_id']),
             'client_secret' => sanitize_textarea_field($_POST['client_secret']),
-            'tenant_domain' => sanitize_text_field($_POST['tenant_domain'])
+            'tenant_domain' => sanitize_text_field($_POST['tenant_domain']),
+            'self_paying' => isset($_POST['self_paying']) ? 1 : 0,
         );
 
         $tenants_json = isset($_POST['tenants']) ? wp_unslash($_POST['tenants']) : '[]';
