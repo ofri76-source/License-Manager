@@ -8,7 +8,7 @@ $settings_url = $portal_urls['settings'] ?? 'https://kb.macomp.co.il/?page_id=14
 $logs_url     = $portal_urls['logs'] ?? 'https://kb.macomp.co.il/?page_id=14285';
 $alerts_url   = $portal_urls['alerts'] ?? 'https://kb.macomp.co.il/?page_id=14290';
 $active       = isset($active) ? $active : '';
-$display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.18.55';
+$display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '172010';
 
 $customer_flags = array();
 if (!empty($customers)) {
@@ -187,9 +187,9 @@ function m365_lm_render_customer_table($grouped_customers, $billing_period_label
                     <th>חשבון חיוב</th>
                     <th>מחיר ללקוח</th>
                     <th>מחיר רכישה</th>
-                    <th>סה"כ נרכש</th>
-                    <th>סה"כ בשימוש</th>
-                    <th>סה"כ פנוי</th>
+                    <th>נרכשו</th>
+                    <th>בשימוש</th>
+                    <th>פנוי</th>
                     <th>ת. חיוב</th>
                     <th>חודשי/שנתי</th>
                     <th>פעולות</th>
@@ -219,6 +219,7 @@ function m365_lm_render_customer_table($grouped_customers, $billing_period_label
                                 $billing_display .= ' / ' . $license->billing_frequency;
                             }
                             $plan_display = isset($license->display_plan_name) ? $license->display_plan_name : $license->plan_name;
+                            $plan_display_short = mb_strlen($plan_display) > 30 ? mb_substr($plan_display, 0, 30) . '…' : $plan_display;
                         ?>
                         <tr class="license-row detail-row" style="display:none;"
                             data-group="<?php echo esc_attr($table_group); ?>"
@@ -230,7 +231,7 @@ function m365_lm_render_customer_table($grouped_customers, $billing_period_label
                             data-enabled="<?php echo esc_attr($license->enabled_units); ?>"
                             data-notes="<?php echo esc_attr($license->notes); ?>"
                         >
-                            <td class="plan-name" data-field="plan_name"><?php echo esc_html($plan_display); ?></td>
+                            <td class="plan-name" data-field="plan_name" title="<?php echo esc_attr($plan_display); ?>"><?php echo esc_html($plan_display_short); ?></td>
                             <td data-field="billing_account"><?php echo esc_html($license->billing_account); ?></td>
                             <td class="editable-price" data-field="selling_price"><?php echo esc_html($license->selling_price); ?></td>
                             <td class="editable-price" data-field="cost_price"><?php echo esc_html($license->cost_price); ?></td>
@@ -240,8 +241,12 @@ function m365_lm_render_customer_table($grouped_customers, $billing_period_label
                             <td data-field="renewal_date"><?php echo esc_html($license->renewal_date); ?></td>
                             <td data-field="billing_cycle"><?php echo esc_html($billing_display); ?></td>
                             <td class="actions">
-                                <button type="button" class="m365-btn m365-btn-small m365-btn-secondary edit-license">ערוך</button>
-                                <button type="button" class="m365-btn m365-btn-small m365-btn-danger delete-license" data-id="<?php echo esc_attr($license->id); ?>">מחק</button>
+                                <button type="button" class="m365-btn m365-btn-small m365-btn-secondary m365-icon-btn edit-license" aria-label="ערוך" title="ערוך">
+                                    ✏️
+                                </button>
+                                <button type="button" class="m365-btn m365-btn-small m365-btn-danger m365-icon-btn delete-license" data-id="<?php echo esc_attr($license->id); ?>" aria-label="מחק" title="מחק">
+                                    🗑️
+                                </button>
                             </td>
                         </tr>
                         <?php foreach ($tenant_licenses as $license): ?>

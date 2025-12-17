@@ -161,6 +161,7 @@ class M365_LM_Shortcodes {
         }
 
         $licenses_saved = 0;
+        $tenant_logs = array();
         foreach ($tenants as $tenant) {
             if (empty($tenant->tenant_id) || empty($tenant->client_id) || empty($tenant->client_secret)) {
                 M365_LM_Database::log_event('error', 'sync_licenses', 'חסרים פרטי Tenant/Client להגדרת חיבור', $customer_id, $tenant);
@@ -181,6 +182,7 @@ class M365_LM_Shortcodes {
                 continue;
             }
 
+            $tenant_count = 0;
             foreach ($skus['skus'] as $sku) {
                 $data = array(
                     'customer_id'      => $customer_id,
@@ -199,11 +201,29 @@ class M365_LM_Shortcodes {
 
                 M365_LM_Database::upsert_license_by_sku($customer_id, $sku['sku_id'], $data, $data['tenant_domain']);
                 $licenses_saved++;
+                $tenant_count++;
             }
+
+            $tenant_logs[] = array(
+                'tenant_id'   => $tenant->tenant_id,
+                'tenant_domain' => $tenant->tenant_domain ?? '',
+                'licenses_saved' => $tenant_count,
+            );
+            M365_LM_Database::log_event(
+                'info',
+                'sync_licenses_tenant',
+                'סנכרון טננט הושלם',
+                $customer_id,
+                array(
+                    'tenant_id' => $tenant->tenant_id,
+                    'tenant_domain' => $tenant->tenant_domain ?? '',
+                    'licenses_saved' => $tenant_count,
+                )
+            );
         }
 
         M365_LM_Database::update_connection_status($customer_id, 'connected', 'Last sync successful');
-        M365_LM_Database::log_event('info', 'sync_licenses', 'סנכרון רישוי הושלם בהצלחה', $customer_id, array('licenses_saved' => $licenses_saved));
+        M365_LM_Database::log_event('info', 'sync_licenses', 'סנכרון רישוי הושלם בהצלחה', $customer_id, array('licenses_saved' => $licenses_saved, 'tenants' => $tenant_logs));
 
         return array('success' => true, 'message' => 'סנכרון הושלם בהצלחה', 'count' => $licenses_saved);
     }
