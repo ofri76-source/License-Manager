@@ -10,6 +10,7 @@ $settings_url = $portal_urls['settings'] ?? 'https://kb.macomp.co.il/?page_id=14
 $logs_url     = $portal_urls['logs'] ?? 'https://kb.macomp.co.il/?page_id=14285';
 $alerts_url   = $portal_urls['alerts'] ?? 'https://kb.macomp.co.il/?page_id=14290';
 $active       = isset($active) ? $active : 'alerts';
+$display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.17.11';
 
 $customer_query = isset($filters['customer_query']) ? $filters['customer_query'] : '';
 $license_query  = isset($filters['license_query']) ? $filters['license_query'] : '';
@@ -101,3 +102,5 @@ $date_to        = isset($filters['date_to']) ? $filters['date_to'] : '';
         </table>
     </div>
 </div>
+
+<div class="m365-version-tag">גרסה <?php echo esc_html($display_version); ?></div>

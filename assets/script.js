@@ -560,7 +560,7 @@ jQuery(document).ready(function($) {
 
     // הוספת לקוח
     $('#add-customer').on('click', function() {
-        $('#customer-modal-title').text('הוסף לקוח חדש');
+        $('#customer-modal-title').text('לקוח חדש');
         $('#customer-form')[0].reset();
         $('#customer-id').val('');
         $('#customer-lookup').val('');
