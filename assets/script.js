@@ -68,8 +68,21 @@ jQuery(document).ready(function($) {
             });
         });
 
+        additionalTenantsContainer.find('.kbbm-tenant-card').each(function() {
+            const card = $(this);
+            tenants.push({
+                tenant_id: card.find('.kbbm-tenant-id').val() || '',
+                tenant_domain: card.find('.kbbm-tenant-domain').val() || '',
+                client_id: card.find('.kbbm-tenant-client-id').val() || '',
+                client_secret: card.find('.kbbm-tenant-client-secret').val() || '',
+                api_expiry_date: card.find('.kbbm-tenant-expiry').val() || ''
+            });
+        });
+
         $('#customer-tenants-json').val(JSON.stringify(tenants));
     }
+
+    window.kbbmSerializeTenants = serializeTenants;
 
     function addAdditionalTenantRow(data = {}) {
         const row = $(`
@@ -560,7 +573,7 @@ jQuery(document).ready(function($) {
 
     const tenantFieldSelectors = '#customer-tenant-id, #customer-client-id, #customer-client-secret, #customer-tenant-domain';
 
-    $(document).on('input change', `${tenantFieldSelectors}, .additional-tenant-row input`, function() {
+    $(document).on('input change', `${tenantFieldSelectors}, .additional-tenant-row input, .kbbm-tenant-card input`, function() {
         serializeTenants();
     });
 
@@ -572,6 +585,7 @@ jQuery(document).ready(function($) {
         $('#customer-lookup').val('');
         $('#customer-lookup-results').hide();
         $('#customer-paste-source').val('');
+        $('#customer-self-paying').prop('checked', false);
         additionalTenantsContainer.empty();
         $('#customer-tenants-json').val('[]');
 
@@ -597,34 +611,35 @@ jQuery(document).ready(function($) {
                 $('#customer-modal-title').text('עריכת לקוח');
                 $('#customer-id').val(customer.id || '');
                 $('#customer-number').val(customer.customer_number || '');
-        $('#customer-name').val(customer.customer_name || '');
-        $('#customer-tenant-id').val(customer.tenant_id || '');
-        $('#customer-client-id').val(customer.client_id || '');
-        $('#customer-client-secret').val(customer.client_secret || '');
-        $('#customer-tenant-domain').val(customer.tenant_domain || '');
-        $('#customer-api-expiry').val('');
-        $('#customer-paste-source').val('');
-        additionalTenantsContainer.empty();
-        $('#customer-tenants-json').val('[]');
-        if (customer.tenants && customer.tenants.length > 0) {
-            customer.tenants.forEach(function(tenant, index) {
-                if (index === 0) {
-                    $('#customer-tenant-id').val(tenant.tenant_id || customer.tenant_id || '');
-                    $('#customer-client-id').val(tenant.client_id || customer.client_id || '');
-                    $('#customer-client-secret').val(tenant.client_secret || customer.client_secret || '');
-                    $('#customer-tenant-domain').val(tenant.tenant_domain || customer.tenant_domain || '');
-                    $('#customer-api-expiry').val(tenant.api_expiry_date || '');
-                } else {
-                    addAdditionalTenantRow({
-                        tenant_id: tenant.tenant_id,
-                        client_id: tenant.client_id,
-                        client_secret: tenant.client_secret,
-                        tenant_domain: tenant.tenant_domain,
-                        api_expiry_date: tenant.api_expiry_date
+                $('#customer-name').val(customer.customer_name || '');
+                $('#customer-tenant-id').val(customer.tenant_id || '');
+                $('#customer-client-id').val(customer.client_id || '');
+                $('#customer-client-secret').val(customer.client_secret || '');
+                $('#customer-tenant-domain').val(customer.tenant_domain || '');
+                $('#customer-self-paying').prop('checked', Number(customer.is_self_paying) === 1);
+                $('#customer-api-expiry').val('');
+                $('#customer-paste-source').val('');
+                additionalTenantsContainer.empty();
+                $('#customer-tenants-json').val('[]');
+                if (customer.tenants && customer.tenants.length > 0) {
+                    customer.tenants.forEach(function(tenant, index) {
+                        if (index === 0) {
+                            $('#customer-tenant-id').val(tenant.tenant_id || customer.tenant_id || '');
+                            $('#customer-client-id').val(tenant.client_id || customer.client_id || '');
+                            $('#customer-client-secret').val(tenant.client_secret || customer.client_secret || '');
+                            $('#customer-tenant-domain').val(tenant.tenant_domain || customer.tenant_domain || '');
+                            $('#customer-api-expiry').val(tenant.api_expiry_date || '');
+                        } else {
+                            addAdditionalTenantRow({
+                                tenant_id: tenant.tenant_id,
+                                client_id: tenant.client_id,
+                                client_secret: tenant.client_secret,
+                                tenant_domain: tenant.tenant_domain,
+                                api_expiry_date: tenant.api_expiry_date
+                            });
+                        }
                     });
                 }
-            });
-        }
                 serializeTenants();
 
                 const row = $(e.target).closest('tr');
@@ -1310,23 +1325,9 @@ jQuery(document).ready(function($) {
   }
 
   function serializeTenants(){
-    var hid = document.getElementById('customer-tenants-json');
-    if (!hid) return;
-    var cards = qa('#additional-tenants .kbbm-tenant-card');
-    var tenants = [];
-    for (var i=0;i<cards.length;i++){
-      var c = cards[i];
-      var t = {
-        tenant_id: (q('.kbbm-tenant-id', c) || {}).value || '',
-        tenant_domain: (q('.kbbm-tenant-domain', c) || {}).value || '',
-        client_id: (q('.kbbm-tenant-client-id', c) || {}).value || '',
-        client_secret: (q('.kbbm-tenant-client-secret', c) || {}).value || ''
-      };
-      var hasAny = false;
-      for (var k in t){ if (t.hasOwnProperty(k) && String(t[k]).trim() !== '') { hasAny=true; break; } }
-      if (hasAny) tenants.push(t);
+    if (typeof window.kbbmSerializeTenants === 'function') {
+      window.kbbmSerializeTenants();
     }
-    hid.value = JSON.stringify(tenants);
   }
 
   function makeField(label, cls, placeholder, type){
