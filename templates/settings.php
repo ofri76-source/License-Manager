@@ -10,7 +10,7 @@
         $license_types  = isset($license_types) ? $license_types : array();
         $log_retention_days = isset($log_retention_days) ? intval($log_retention_days) : 120;
         $use_test_server = (int) get_option('kbbm_use_test_server', 0);
-        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.18.55';
+        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.21.00';
     ?>
     <div class="m365-nav-links">
         <a href="<?php echo esc_url($main_url); ?>" class="<?php echo $active === 'main' ? 'active' : ''; ?>">ראשי</a>
@@ -85,6 +85,11 @@
                     <div class="form-group kbbm-inline-field">
                         <label for="customer-tenant-domain">Tenant Domain:</label>
                         <input type="text" id="customer-tenant-domain" name="tenant_domain" placeholder="example.onmicrosoft.com">
+                    </div>
+
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-self-paying">לקוח משלם בעצמו:</label>
+                        <input type="checkbox" id="customer-self-paying" name="is_self_paying" value="1">
                     </div>
 
                     <div class="form-group kbbm-inline-field">
@@ -166,6 +171,7 @@
                         <th>Tenant ID</th>
                         <th>Client ID</th>
                         <th>תוקף API</th>
+                        <th>לקוח משלם</th>
                         <th>סטטוס</th>
                         <th>פעולות</th>
                     </tr>
@@ -173,7 +179,7 @@
                 <tbody>
                     <?php if (empty($customers)): ?>
                         <tr>
-                            <td colspan="6" class="no-data">אין לקוחות רשומים</td>
+                            <td colspan="8" class="no-data">אין לקוחות רשומים</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($customers as $customer): ?>
@@ -203,6 +209,7 @@
                                 <td><?php echo esc_html(substr($tenant_id, 0, 20)) . (strlen($tenant_id) > 20 ? '...' : ''); ?></td>
                                 <td><?php echo esc_html(substr($client_id, 0, 20)) . (strlen($client_id) > 20 ? '...' : ''); ?></td>
                                 <td><?php echo esc_html($primary_tenant && !empty($primary_tenant->api_expiry_date) ? $primary_tenant->api_expiry_date : ''); ?></td>
+                                <td><?php echo intval($customer->is_self_paying ?? 0) === 1 ? 'כן' : 'לא'; ?></td>
                                 <td>
                                     <span id="connection-status-<?php echo esc_attr($customer->id); ?>" class="connection-status <?php echo esc_attr($status_class); ?>" title="<?php echo esc_attr($status_msg); ?>">
                                         <?php echo esc_html($status_label); ?>
@@ -231,6 +238,7 @@
                                         <td><?php echo esc_html(substr($tenant->tenant_id, 0, 20)) . (strlen($tenant->tenant_id) > 20 ? '...' : ''); ?></td>
                                         <td><?php echo esc_html(substr($tenant->client_id, 0, 20)) . (strlen($tenant->client_id) > 20 ? '...' : ''); ?></td>
                                         <td><?php echo esc_html($tenant->api_expiry_date ?? ''); ?></td>
+                                        <td><?php echo intval($customer->is_self_paying ?? 0) === 1 ? 'כן' : 'לא'; ?></td>
                                         <td>
                                             <span id="tenant-status-<?php echo esc_attr($tenant->id); ?>" class="connection-status status-unknown">לא נבדק</span>
                                         </td>
