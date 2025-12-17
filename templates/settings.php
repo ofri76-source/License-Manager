@@ -10,7 +10,7 @@
         $license_types  = isset($license_types) ? $license_types : array();
         $log_retention_days = isset($log_retention_days) ? intval($log_retention_days) : 120;
         $use_test_server = (int) get_option('kbbm_use_test_server', 0);
-        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.20.27';
+        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.18.55';
     ?>
     <div class="m365-nav-links">
         <a href="<?php echo esc_url($main_url); ?>" class="<?php echo $active === 'main' ? 'active' : ''; ?>">ראשי</a>
@@ -85,16 +85,6 @@
                     <div class="form-group kbbm-inline-field">
                         <label for="customer-tenant-domain">Tenant Domain:</label>
                         <input type="text" id="customer-tenant-domain" name="tenant_domain" placeholder="example.onmicrosoft.com">
-                    </div>
-
-                    <div class="form-group kbbm-inline-field">
-                        <label for="customer-self-paying">לקוח משלם בעצמו:</label>
-                        <div class="kbbm-field-body">
-                            <label style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="customer-self-paying" name="self_paying" value="1">
-                                <span>העבר לרשימת לקוחות משלמים</span>
-                            </label>
-                        </div>
                     </div>
 
                     <div class="form-group kbbm-inline-field">
@@ -222,14 +212,14 @@
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <button type="button" class="m365-btn m365-btn-small edit-customer kbbm-edit-customer m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="ערוך" title="ערוך">
-                                        ✏️
+                                    <button class="m365-btn m365-btn-small edit-customer kbbm-edit-customer" data-id="<?php echo $customer->id; ?>">
+                                        ערוך
                                     </button>
-                                    <button type="button" class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-connection m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="בדוק חיבור" title="בדוק חיבור">
-                                        🔗
+                                    <button class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-connection" data-id="<?php echo $customer->id; ?>">
+                                        בדוק חיבור
                                     </button>
-                                    <button type="button" class="m365-btn m365-btn-small m365-btn-danger delete-customer kbbm-delete-customer m365-icon-btn" data-id="<?php echo $customer->id; ?>" aria-label="מחק" title="מחק">
-                                        🗑️
+                                    <button class="m365-btn m365-btn-small m365-btn-danger delete-customer kbbm-delete-customer" data-id="<?php echo $customer->id; ?>">
+                                        מחק
                                     </button>
                                 </td>
                             </tr>
@@ -245,8 +235,8 @@
                                             <span id="tenant-status-<?php echo esc_attr($tenant->id); ?>" class="connection-status status-unknown">לא נבדק</span>
                                         </td>
                                         <td>
-                                            <button type="button" class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-tenant-connection m365-icon-btn" data-tenant-row-id="<?php echo esc_attr($tenant->id); ?>" aria-label="בדוק חיבור טננט" title="בדוק חיבור טננט">
-                                                🔗
+                                            <button class="m365-btn m365-btn-small m365-btn-secondary kbbm-test-tenant-connection" data-tenant-row-id="<?php echo esc_attr($tenant->id); ?>">
+                                                בדוק חיבור טננט
                                             </button>
                                         </td>
                                     </tr>
