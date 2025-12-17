@@ -249,6 +249,40 @@ function m365_lm_render_customer_table($grouped_customers, $billing_period_label
                                 </button>
                             </td>
                         </tr>
+                        <?php foreach ($tenant_licenses as $license): ?>
+                            <?php
+                                $total_purchased = ($license->quantity > 0) ? $license->quantity : $license->enabled_units;
+                                $available = $total_purchased - $license->consumed_units;
+                                $billing_display = $license->billing_cycle;
+                                if (!empty($license->billing_frequency)) {
+                                    $billing_display .= ' / ' . $license->billing_frequency;
+                                }
+                                $plan_display = isset($license->display_plan_name) ? $license->display_plan_name : $license->plan_name;
+                            ?>
+                            <tr class="license-row detail-row" style="display:none;"
+                                data-id="<?php echo esc_attr($license->id); ?>"
+                                data-customer="<?php echo esc_attr($cid); ?>"
+                                data-billing-cycle="<?php echo esc_attr($license->billing_cycle); ?>"
+                                data-billing-frequency="<?php echo esc_attr($license->billing_frequency); ?>"
+                                data-quantity="<?php echo esc_attr($license->quantity); ?>"
+                                data-enabled="<?php echo esc_attr($license->enabled_units); ?>"
+                                data-notes="<?php echo esc_attr($license->notes); ?>"
+                            >
+                                <td class="plan-name" data-field="plan_name"><?php echo esc_html($plan_display); ?></td>
+                                <td data-field="billing_account"><?php echo esc_html($license->billing_account); ?></td>
+                                <td class="editable-price" data-field="selling_price"><?php echo esc_html($license->selling_price); ?></td>
+                                <td class="editable-price" data-field="cost_price"><?php echo esc_html($license->cost_price); ?></td>
+                                <td data-field="total_purchased"><?php echo esc_html($total_purchased); ?></td>
+                                <td data-field="consumed_units"><?php echo esc_html($license->consumed_units); ?></td>
+                                <td data-field="available_units"><?php echo esc_html($available); ?></td>
+                                <td data-field="renewal_date"><?php echo esc_html($license->renewal_date); ?></td>
+                                <td data-field="billing_cycle"><?php echo esc_html($billing_display); ?></td>
+                                <td class="actions">
+                                    <button type="button" class="m365-btn m365-btn-small m365-btn-secondary edit-license">ערוך</button>
+                                    <button type="button" class="m365-btn m365-btn-small m365-btn-danger delete-license" data-id="<?php echo esc_attr($license->id); ?>">מחק</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     <?php endforeach; ?>
                 <?php endforeach; ?>
                 <tr class="kb-notes-row detail-row" data-group="<?php echo esc_attr($table_group); ?>" data-customer="<?php echo esc_attr($cid); ?>" style="display:none;">
