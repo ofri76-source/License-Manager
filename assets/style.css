@@ -579,8 +579,8 @@
 
 .kbbm-grid-form {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 18px 22px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px 18px;
     align-items: start;
 }
 
@@ -602,8 +602,10 @@
 .kbbm-inline-field label {
     margin: 0;
     white-space: nowrap;
-    min-width: 140px;
+    min-width: 150px;
     text-align: right;
+    font-weight: 700;
+    color: #323130;
 }
 
 .kbbm-field-body {
@@ -618,11 +620,11 @@
 .kbbm-field-body select,
 .kbbm-field-body textarea {
     width: 100%;
-    min-height: 44px;
+    min-height: 46px;
 }
 
 .kbbm-field-body textarea {
-    min-height: 120px;
+    min-height: 130px;
 }
 
 .kbbm-inline-actions {
@@ -662,12 +664,14 @@
 }
 
 .kbbm-customer-form .kbbm-grid-form {
-    gap: 14px 18px;
+    gap: 14px 16px;
 }
 
 .kbbm-customer-form h3 {
     text-align: center;
-    margin-bottom: 14px;
+    margin: 0 0 16px;
+    font-size: 20px;
+    color: #2d2d2d;
 }
 
 .kbbm-grid-form .kbbm-inline-field input[type="text"],
@@ -995,11 +999,12 @@
   clear:both !important;
   float:none !important;
   box-sizing:border-box;
-  border:1px solid #e0e0e0;
+  border:1px solid #e3e3e3;
   border-radius:10px;
-  padding:18px 16px;
-  background:#fbfbfb;
-  margin:18px 0;
+  padding:18px 18px 20px;
+  background:#ffffff;
+  margin:20px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 
 #additional-tenants .kbbm-tenant-card .kbbm-tenant-card-header{
@@ -1020,6 +1025,7 @@
   display:flex;
   flex-direction:column;
   gap:12px;
+  direction: rtl;
 }
 
 #additional-tenants .kbbm-tenant-row{
@@ -1027,9 +1033,9 @@
   align-items:center;
   gap:12px;
   flex-direction:row-reverse;
-  border:1px solid #e8e8e8;
-  background:#fff;
-  padding:10px 12px;
+  border:1px solid #e4e4e4;
+  background:#fbfbfb;
+  padding:11px 12px;
   border-radius:6px;
 }
 
@@ -1042,12 +1048,13 @@
 
 #additional-tenants .kbbm-tenant-row input{
   flex:1;
-  min-height:42px;
+  min-height:46px;
+  background: #fff;
 }
 
 #additional-tenants .kbbm-tenant-actions-inline{
-  justify-content:flex-start;
-  padding:0 2px;
+  justify-content:flex-end;
+  padding:4px 2px 0;
 }
 
 @media (max-width: 1100px){

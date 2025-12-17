@@ -15,7 +15,7 @@ define('M365_LM_VERSION', '1.0.1');
 define('M365_LM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('M365_LM_PLUGIN_URL', plugin_dir_url(__FILE__));
 if (!defined('M365_LM_DISPLAY_VERSION')) {
-    define('M365_LM_DISPLAY_VERSION', '17.17.11');
+    define('M365_LM_DISPLAY_VERSION', '17.18.55');
 }
 
 // טעינת קבצים נדרשים
