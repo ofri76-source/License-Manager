@@ -14,6 +14,9 @@ if (!defined('ABSPATH')) exit;
 define('M365_LM_VERSION', '1.0.1');
 define('M365_LM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('M365_LM_PLUGIN_URL', plugin_dir_url(__FILE__));
+if (!defined('M365_LM_DISPLAY_VERSION')) {
+    define('M365_LM_DISPLAY_VERSION', '172010');
+}
 
 // טעינת קבצים נדרשים
 require_once M365_LM_PLUGIN_DIR . 'includes/class-database.php';

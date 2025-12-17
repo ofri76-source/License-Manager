@@ -17,6 +17,7 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            self_paying tinyint(1) DEFAULT 0,
             last_connection_status varchar(20) DEFAULT 'unknown',
             last_connection_message text DEFAULT NULL,
             last_connection_time datetime DEFAULT NULL,
@@ -36,6 +37,7 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            self_paying tinyint(1) DEFAULT 0,
             last_connection_status varchar(20) DEFAULT 'unknown',
             last_connection_message text DEFAULT NULL,
             last_connection_time datetime DEFAULT NULL,
@@ -54,6 +56,7 @@ class M365_LM_Database {
             tenant_domain varchar(255) DEFAULT NULL,
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
+            api_expiry_date date DEFAULT NULL,
             is_primary tinyint(1) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -168,6 +171,9 @@ class M365_LM_Database {
         self::maybe_add_column($kb_licenses_table, 'tenant_domain', "tenant_domain VARCHAR(255) NULL AFTER status_text");
         self::maybe_add_column($types_table, 'display_name', "display_name VARCHAR(255) DEFAULT '' AFTER name");
         self::maybe_add_column($types_table, 'show_in_main', "show_in_main TINYINT(1) DEFAULT 1 AFTER default_billing_frequency");
+        self::maybe_add_column($kb_customer_tenants, 'api_expiry_date', "api_expiry_date DATE DEFAULT NULL AFTER client_secret");
+        self::maybe_add_column($kb_customers_table, 'self_paying', "self_paying TINYINT(1) DEFAULT 0 AFTER tenant_domain");
+        self::maybe_add_column($table_customers, 'self_paying', "self_paying TINYINT(1) DEFAULT 0 AFTER tenant_domain");
     }
     
     // פונקציות CRUD ללקוחות
@@ -217,6 +223,7 @@ class M365_LM_Database {
                 'tenant_domain' => isset($tenant['tenant_domain']) ? sanitize_text_field($tenant['tenant_domain']) : null,
                 'client_id'     => isset($tenant['client_id']) ? sanitize_text_field($tenant['client_id']) : null,
                 'client_secret' => isset($tenant['client_secret']) ? sanitize_textarea_field($tenant['client_secret']) : null,
+                'api_expiry_date' => isset($tenant['api_expiry_date']) ? sanitize_text_field($tenant['api_expiry_date']) : null,
                 'is_primary'    => $index === 0 ? 1 : 0,
             ));
         }
@@ -228,6 +235,15 @@ class M365_LM_Database {
         return $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$table} WHERE customer_id = %d ORDER BY is_primary DESC, id ASC",
             $customer_id
+        ));
+    }
+
+    public static function get_tenant_by_id($tenant_row_id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'kb_billing_customer_tenants';
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE id = %d",
+            $tenant_row_id
         ));
     }
     
