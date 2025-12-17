@@ -50,6 +50,20 @@
     width: 100%;
 }
 
+.kbbm-table-section {
+    margin-top: 20px;
+}
+
+.kbbm-table-section + .kbbm-table-section {
+    margin-top: 30px;
+}
+
+.kbbm-table-title {
+    margin: 0 0 10px;
+    color: #0078d4;
+    font-size: 18px;
+}
+
 .kbbm-license-types-table th,
 .kbbm-license-types-table td {
     text-align: center;
@@ -209,7 +223,8 @@
 .m365-table .plan-name {
     text-align: right;
     font-weight: 500;
-    max-width: 300px;
+    max-width: 200px;
+    width: 200px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
