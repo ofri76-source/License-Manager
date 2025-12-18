@@ -10,6 +10,8 @@
         $license_types  = isset($license_types) ? $license_types : array();
         $log_retention_days = isset($log_retention_days) ? intval($log_retention_days) : 120;
         $use_test_server = (int) get_option('kbbm_use_test_server', 0);
+        $api_expiry_warning_days = intval(get_option('kbbm_expiry_warning_days', 60));
+        $api_expiry_danger_days  = intval(get_option('kbbm_expiry_danger_days', 30));
         $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.21.00';
 
         if (!function_exists('kbbm_format_api_expiry')) {
@@ -339,7 +341,6 @@
                 <table class="m365-table kbbm-license-types-table">
                     <thead>
                         <tr>
-                            <th>SKU</th>
                             <th>שם רישיון (API)</th>
                             <th>שם לתצוגה</th>
                             <th class="col-cost">מחיר רכישה</th>
@@ -363,7 +364,6 @@
                                     data-billing-frequency="<?php echo esc_attr($type->billing_frequency ?? 1); ?>"
                                     data-show-in-main="<?php echo isset($type->show_in_main) ? esc_attr($type->show_in_main) : 1; ?>"
                                 >
-                                    <td><?php echo esc_html($type->sku); ?></td>
                                     <td><?php echo esc_html($type->name); ?></td>
                                     <td><?php echo esc_html($type->display_name ?? $type->name); ?></td>
                                     <td class="col-cost"><?php echo esc_html($type->cost_price); ?></td>
@@ -376,7 +376,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="9" class="no-data">אין סוגי רישיונות מוגדרים</td>
+                                <td colspan="8" class="no-data">אין סוגי רישיונות מוגדרים</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -399,6 +399,16 @@
                     <label>מספר ימים לשמירת לוגים לפני מחיקה:</label>
                     <input type="number" id="kbbm-log-retention-days" name="log_retention_days" min="1" value="<?php echo esc_attr($log_retention_days); ?>" placeholder="120">
                     <small>ברירת המחדל: 120 ימים.</small>
+                </div>
+                <div class="form-group">
+                    <label>ימים להתראה צהובה על תוקף API:</label>
+                    <input type="number" id="kbbm-api-warning-days" name="api_expiry_warning_days" min="0" value="<?php echo esc_attr($api_expiry_warning_days); ?>" placeholder="60">
+                    <small>ברירת המחדל: 60 ימים.</small>
+                </div>
+                <div class="form-group">
+                    <label>ימים להתראה אדומה על תוקף API:</label>
+                    <input type="number" id="kbbm-api-danger-days" name="api_expiry_danger_days" min="0" value="<?php echo esc_attr($api_expiry_danger_days); ?>" placeholder="30">
+                    <small>ברירת המחדל: 30 ימים.</small>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="m365-btn m365-btn-primary">שמור הגדרות</button>

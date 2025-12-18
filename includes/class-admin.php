@@ -397,8 +397,16 @@ class M365_LM_Admin {
         $retention_days = $retention_days > 0 ? $retention_days : 120;
         $use_test_server = isset($_POST['use_test_server']) ? (int) $_POST['use_test_server'] : 0;
 
+        $warning_days = isset($_POST['api_expiry_warning_days']) ? intval($_POST['api_expiry_warning_days']) : 60;
+        $danger_days  = isset($_POST['api_expiry_danger_days']) ? intval($_POST['api_expiry_danger_days']) : 30;
+
+        $warning_days = $warning_days >= 0 ? $warning_days : 60;
+        $danger_days  = $danger_days >= 0 ? $danger_days : 30;
+
         update_option('kbbm_log_retention_days', $retention_days);
         update_option('kbbm_use_test_server', $use_test_server);
+        update_option('kbbm_expiry_warning_days', $warning_days);
+        update_option('kbbm_expiry_danger_days', $danger_days);
 
         // בצע ניקוי מיידי בהתאם לערך המעודכן
         M365_LM_Database::prune_logs($retention_days);
@@ -407,6 +415,8 @@ class M365_LM_Admin {
             'message' => 'ההגדרות נשמרו בהצלחה',
             'log_retention_days' => $retention_days,
             'use_test_server' => $use_test_server,
+            'api_expiry_warning_days' => $warning_days,
+            'api_expiry_danger_days' => $danger_days,
         ));
     }
 }

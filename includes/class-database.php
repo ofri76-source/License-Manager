@@ -705,6 +705,19 @@ class M365_LM_Database {
         );
     }
 
+    public static function get_api_expiry_thresholds() {
+        $warning_days = intval(get_option('kbbm_expiry_warning_days', 60));
+        $danger_days  = intval(get_option('kbbm_expiry_danger_days', 30));
+
+        $warning_days = $warning_days >= 0 ? $warning_days : 60;
+        $danger_days  = $danger_days >= 0 ? $danger_days : 30;
+
+        return array(
+            'warning' => $warning_days,
+            'danger'  => $danger_days,
+        );
+    }
+
 
     public static function update_connection_status($customer_id, $status, $message = '') {
         global $wpdb;

@@ -17,6 +17,7 @@ $billing_period_label = $current_billing_period !== '' ? $current_billing_period
 $grouped_customers = array();
 $types_by_sku      = array();
 $primary_expiries  = method_exists('M365_LM_Database', 'get_primary_tenant_expiries') ? M365_LM_Database::get_primary_tenant_expiries() : array();
+$expiry_thresholds = method_exists('M365_LM_Database', 'get_api_expiry_thresholds') ? M365_LM_Database::get_api_expiry_thresholds() : array('warning' => 60, 'danger' => 30);
 
 if (!empty($license_types)) {
     foreach ($license_types as $type) {
@@ -76,7 +77,7 @@ if (!empty($licenses)) {
 }
 
 if (!function_exists('kbbm_api_expiry_badge')) {
-    function kbbm_api_expiry_badge($customer_id, $primary_expiries) {
+    function kbbm_api_expiry_badge($customer_id, $primary_expiries, $thresholds = array('warning' => 60, 'danger' => 30)) {
         if (empty($primary_expiries) || !isset($primary_expiries[$customer_id])) {
             return '';
         }
@@ -93,11 +94,14 @@ if (!function_exists('kbbm_api_expiry_badge')) {
 
         $now   = current_time('timestamp');
         $days  = (int) floor(($timestamp - $now) / DAY_IN_SECONDS);
+        $warning = isset($thresholds['warning']) ? intval($thresholds['warning']) : 60;
+        $danger  = isset($thresholds['danger']) ? intval($thresholds['danger']) : 30;
+
         $class = 'kbbm-expiry-ok';
 
-        if ($days <= 30) {
+        if ($days <= $danger) {
             $class = 'kbbm-expiry-danger';
-        } elseif ($days <= 60) {
+        } elseif ($days <= $warning) {
             $class = 'kbbm-expiry-warning';
         }
 
@@ -190,7 +194,7 @@ if (!function_exists('kbbm_render_license_table')) {
                         <td colspan="2" class="<?php echo $has_billing_period ? '' : 'kbbm-empty-summary'; ?>"><?php echo $has_billing_period ? esc_html($billing_period_label) : ''; ?></td>
                         <td colspan="2" class="<?php echo $has_total_charges ? '' : 'kbbm-empty-summary'; ?>">
                             <?php echo $has_total_charges ? number_format($total_charges, 2) : ''; ?>
-                            <?php echo kbbm_api_expiry_badge($cid, $primary_expiries); ?>
+                            <?php echo kbbm_api_expiry_badge($cid, $primary_expiries, $expiry_thresholds); ?>
                         </td>
                     </tr>
                         <tr class="plans-header-row detail-row" data-customer="<?php echo esc_attr($cid); ?>" style="display:none;">
