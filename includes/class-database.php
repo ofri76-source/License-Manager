@@ -238,6 +238,28 @@ class M365_LM_Database {
         ));
     }
 
+    /**
+     * מחזיר מפה של customer_id => api_expiry_date עבור טננט ראשי.
+     */
+    public static function get_primary_tenant_expiries() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'kb_billing_customer_tenants';
+
+        $rows = $wpdb->get_results(
+            "SELECT customer_id, api_expiry_date FROM {$table} WHERE is_primary = 1",
+            OBJECT
+        );
+
+        $map = array();
+        if (!empty($rows)) {
+            foreach ($rows as $row) {
+                $map[intval($row->customer_id)] = $row->api_expiry_date;
+            }
+        }
+
+        return $map;
+    }
+
     public static function get_tenant_by_id($tenant_row_id) {
         global $wpdb;
         $table = $wpdb->prefix . 'kb_billing_customer_tenants';

@@ -205,7 +205,7 @@ class M365_LM_Admin {
                 'client_id'       => sanitize_text_field($tenant['client_id'] ?? ''),
                 'client_secret'   => sanitize_textarea_field($tenant['client_secret'] ?? ''),
                 'tenant_domain'   => sanitize_text_field($tenant['tenant_domain'] ?? ''),
-                'api_expiry_date' => sanitize_text_field($tenant['api_expiry_date'] ?? ''),
+                'api_expiry_date' => self::normalize_api_expiry_date($tenant['api_expiry_date'] ?? ''),
             );
         }
 
@@ -247,6 +247,7 @@ class M365_LM_Admin {
         $client_id     = sanitize_text_field($_POST['client_id'] ?? '');
         $client_secret = sanitize_textarea_field($_POST['client_secret'] ?? '');
         $tenant_domain = sanitize_text_field($_POST['tenant_domain'] ?? '');
+        $api_expiry    = self::normalize_api_expiry_date($_POST['api_expiry_date'] ?? '');
 
         if ($tenant_id === '') {
             wp_send_json_error(array('message' => 'Tenant ID נדרש'));
@@ -269,7 +270,7 @@ class M365_LM_Admin {
             'client_id'     => $client_id,
             'client_secret' => $client_secret,
             'tenant_domain' => $tenant_domain,
-            'api_expiry_date' => sanitize_text_field($_POST['api_expiry_date'] ?? ''),
+            'api_expiry_date' => $api_expiry,
         );
 
         M365_LM_Database::replace_customer_tenants($customer_id, $clean);
@@ -292,7 +293,25 @@ class M365_LM_Admin {
             wp_send_json_error(array('message' => 'לקוח לא נמצא'));
         }
     }
-    
+
+    /**
+     * Adds 2 years to a given date string and returns it as Y-m-d.
+     */
+    private static function normalize_api_expiry_date($raw_date) {
+        $raw_date = isset($raw_date) ? trim((string) $raw_date) : '';
+        if ($raw_date === '') {
+            return '';
+        }
+
+        try {
+            $dt = new DateTime($raw_date);
+            $dt->modify('+2 years');
+            return $dt->format('Y-m-d');
+        } catch (Exception $e) {
+            return sanitize_text_field($raw_date);
+        }
+    }
+
     // AJAX - מחיקת לקוח
     public function ajax_delete_customer() {
         check_ajax_referer('m365_nonce', 'nonce');

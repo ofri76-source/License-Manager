@@ -16,6 +16,7 @@ $billing_period_label = $current_billing_period !== '' ? $current_billing_period
 
 $grouped_customers = array();
 $types_by_sku      = array();
+$primary_expiries  = method_exists('M365_LM_Database', 'get_primary_tenant_expiries') ? M365_LM_Database::get_primary_tenant_expiries() : array();
 
 if (!empty($license_types)) {
     foreach ($license_types as $type) {
@@ -71,6 +72,46 @@ if (!empty($licenses)) {
         }
 
         $grouped_customers[$cid]['licenses'][] = $license;
+    }
+}
+
+if (!function_exists('kbbm_api_expiry_badge')) {
+    function kbbm_api_expiry_badge($customer_id, $primary_expiries) {
+        if (empty($primary_expiries) || !isset($primary_expiries[$customer_id])) {
+            return '';
+        }
+
+        $expiry_raw = $primary_expiries[$customer_id];
+        if (empty($expiry_raw) || $expiry_raw === '0000-00-00') {
+            return '';
+        }
+
+        $timestamp = strtotime($expiry_raw);
+        if ($timestamp === false) {
+            return '';
+        }
+
+        $now   = current_time('timestamp');
+        $days  = (int) floor(($timestamp - $now) / DAY_IN_SECONDS);
+        $class = 'kbbm-expiry-ok';
+
+        if ($days <= 30) {
+            $class = 'kbbm-expiry-danger';
+        } elseif ($days <= 60) {
+            $class = 'kbbm-expiry-warning';
+        }
+
+        $label = $days >= 0
+            ? sprintf(__('נותרו %s ימים', 'm365-license-manager'), $days)
+            : sprintf(__('פג לפני %s ימים', 'm365-license-manager'), abs($days));
+
+        $full_label = sprintf('%s | %s', $label, sprintf(__('תוקף: %s', 'm365-license-manager'), $expiry_raw));
+
+        return sprintf(
+            '<div class="kbbm-api-badge %1$s">%2$s</div>',
+            esc_attr($class),
+            esc_html($full_label)
+        );
     }
 }
 
@@ -146,9 +187,12 @@ if (!function_exists('kbbm_render_license_table')) {
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </td>
-                            <td colspan="2" class="<?php echo $has_billing_period ? '' : 'kbbm-empty-summary'; ?>"><?php echo $has_billing_period ? esc_html($billing_period_label) : ''; ?></td>
-                            <td colspan="2" class="<?php echo $has_total_charges ? '' : 'kbbm-empty-summary'; ?>"><?php echo $has_total_charges ? number_format($total_charges, 2) : ''; ?></td>
-                        </tr>
+                        <td colspan="2" class="<?php echo $has_billing_period ? '' : 'kbbm-empty-summary'; ?>"><?php echo $has_billing_period ? esc_html($billing_period_label) : ''; ?></td>
+                        <td colspan="2" class="<?php echo $has_total_charges ? '' : 'kbbm-empty-summary'; ?>">
+                            <?php echo $has_total_charges ? number_format($total_charges, 2) : ''; ?>
+                            <?php echo kbbm_api_expiry_badge($cid, $primary_expiries); ?>
+                        </td>
+                    </tr>
                         <tr class="plans-header-row detail-row" data-customer="<?php echo esc_attr($cid); ?>" style="display:none;">
                             <th>תוכנית ללקוח</th>
                             <th>חשבון חיוב</th>
