@@ -10,7 +10,36 @@
         $license_types  = isset($license_types) ? $license_types : array();
         $log_retention_days = isset($log_retention_days) ? intval($log_retention_days) : 120;
         $use_test_server = (int) get_option('kbbm_use_test_server', 0);
-        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.18.55';
+        $api_expiry_warning_days = intval(get_option('kbbm_expiry_warning_days', 60));
+        $api_expiry_danger_days  = intval(get_option('kbbm_expiry_danger_days', 30));
+        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.21.00';
+
+        if (!function_exists('kbbm_format_api_expiry')) {
+            function kbbm_format_api_expiry($date_value) {
+                if (empty($date_value) || $date_value === '0000-00-00') {
+                    return '';
+                }
+
+                $timestamp = strtotime($date_value);
+                if ($timestamp === false) {
+                    return esc_html($date_value);
+                }
+
+                $now    = current_time('timestamp');
+                $days   = (int) floor(($timestamp - $now) / DAY_IN_SECONDS);
+                $suffix = '';
+
+                if ($days > 0) {
+                    $suffix = sprintf(__(' (עוד %s ימים)', 'm365-license-manager'), $days);
+                } elseif ($days === 0) {
+                    $suffix = __(' (פג היום)', 'm365-license-manager');
+                } else {
+                    $suffix = sprintf(__(' (פג לפני %s ימים)', 'm365-license-manager'), abs($days));
+                }
+
+                return esc_html($date_value . $suffix);
+            }
+        }
     ?>
     <div class="m365-nav-links">
         <a href="<?php echo esc_url($main_url); ?>" class="<?php echo $active === 'main' ? 'active' : ''; ?>">ראשי</a>
@@ -85,6 +114,11 @@
                     <div class="form-group kbbm-inline-field">
                         <label for="customer-tenant-domain">Tenant Domain:</label>
                         <input type="text" id="customer-tenant-domain" name="tenant_domain" placeholder="example.onmicrosoft.com">
+                    </div>
+
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-self-paying">לקוח משלם בעצמו:</label>
+                        <input type="checkbox" id="customer-self-paying" name="is_self_paying" value="1">
                     </div>
 
                     <div class="form-group kbbm-inline-field">
@@ -166,6 +200,8 @@
                         <th>Tenant ID</th>
                         <th>Client ID</th>
                         <th>תוקף API</th>
+                        <th>ימים עד תפוגה</th>
+                        <th>לקוח משלם</th>
                         <th>סטטוס</th>
                         <th>פעולות</th>
                     </tr>
@@ -173,7 +209,7 @@
                 <tbody>
                     <?php if (empty($customers)): ?>
                         <tr>
-                            <td colspan="6" class="no-data">אין לקוחות רשומים</td>
+                            <td colspan="9" class="no-data">אין לקוחות רשומים</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($customers as $customer): ?>
@@ -203,6 +239,8 @@
                                 <td><?php echo esc_html(substr($tenant_id, 0, 20)) . (strlen($tenant_id) > 20 ? '...' : ''); ?></td>
                                 <td><?php echo esc_html(substr($client_id, 0, 20)) . (strlen($client_id) > 20 ? '...' : ''); ?></td>
                                 <td><?php echo esc_html($primary_tenant && !empty($primary_tenant->api_expiry_date) ? $primary_tenant->api_expiry_date : ''); ?></td>
+                                <td><?php echo $primary_tenant && !empty($primary_tenant->api_expiry_date) ? kbbm_format_api_expiry($primary_tenant->api_expiry_date) : ''; ?></td>
+                                <td><?php echo intval($customer->is_self_paying ?? 0) === 1 ? 'כן' : 'לא'; ?></td>
                                 <td>
                                     <span id="connection-status-<?php echo esc_attr($customer->id); ?>" class="connection-status <?php echo esc_attr($status_class); ?>" title="<?php echo esc_attr($status_msg); ?>">
                                         <?php echo esc_html($status_label); ?>
@@ -231,6 +269,8 @@
                                         <td><?php echo esc_html(substr($tenant->tenant_id, 0, 20)) . (strlen($tenant->tenant_id) > 20 ? '...' : ''); ?></td>
                                         <td><?php echo esc_html(substr($tenant->client_id, 0, 20)) . (strlen($tenant->client_id) > 20 ? '...' : ''); ?></td>
                                         <td><?php echo esc_html($tenant->api_expiry_date ?? ''); ?></td>
+                                        <td><?php echo !empty($tenant->api_expiry_date) ? kbbm_format_api_expiry($tenant->api_expiry_date) : ''; ?></td>
+                                        <td><?php echo intval($customer->is_self_paying ?? 0) === 1 ? 'כן' : 'לא'; ?></td>
                                         <td>
                                             <span id="tenant-status-<?php echo esc_attr($tenant->id); ?>" class="connection-status status-unknown">לא נבדק</span>
                                         </td>
@@ -301,7 +341,6 @@
                 <table class="m365-table kbbm-license-types-table">
                     <thead>
                         <tr>
-                            <th>SKU</th>
                             <th>שם רישיון (API)</th>
                             <th>שם לתצוגה</th>
                             <th class="col-cost">מחיר רכישה</th>
@@ -325,7 +364,6 @@
                                     data-billing-frequency="<?php echo esc_attr($type->billing_frequency ?? 1); ?>"
                                     data-show-in-main="<?php echo isset($type->show_in_main) ? esc_attr($type->show_in_main) : 1; ?>"
                                 >
-                                    <td><?php echo esc_html($type->sku); ?></td>
                                     <td><?php echo esc_html($type->name); ?></td>
                                     <td><?php echo esc_html($type->display_name ?? $type->name); ?></td>
                                     <td class="col-cost"><?php echo esc_html($type->cost_price); ?></td>
@@ -338,7 +376,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="9" class="no-data">אין סוגי רישיונות מוגדרים</td>
+                                <td colspan="8" class="no-data">אין סוגי רישיונות מוגדרים</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -361,6 +399,16 @@
                     <label>מספר ימים לשמירת לוגים לפני מחיקה:</label>
                     <input type="number" id="kbbm-log-retention-days" name="log_retention_days" min="1" value="<?php echo esc_attr($log_retention_days); ?>" placeholder="120">
                     <small>ברירת המחדל: 120 ימים.</small>
+                </div>
+                <div class="form-group">
+                    <label>ימים להתראה צהובה על תוקף API:</label>
+                    <input type="number" id="kbbm-api-warning-days" name="api_expiry_warning_days" min="0" value="<?php echo esc_attr($api_expiry_warning_days); ?>" placeholder="60">
+                    <small>ברירת המחדל: 60 ימים.</small>
+                </div>
+                <div class="form-group">
+                    <label>ימים להתראה אדומה על תוקף API:</label>
+                    <input type="number" id="kbbm-api-danger-days" name="api_expiry_danger_days" min="0" value="<?php echo esc_attr($api_expiry_danger_days); ?>" placeholder="30">
+                    <small>ברירת המחדל: 30 ימים.</small>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="m365-btn m365-btn-primary">שמור הגדרות</button>

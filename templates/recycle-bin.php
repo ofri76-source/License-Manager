@@ -6,7 +6,7 @@
         $settings_url = $portal_urls['settings'] ?? 'https://kb.macomp.co.il/?page_id=14292';
         $logs_url    = $portal_urls['logs'] ?? 'https://kb.macomp.co.il/?page_id=14285';
         $active       = isset($active) ? $active : '';
-        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.18.55';
+        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.21.00';
     ?>
     <div class="m365-nav-links">
         <a href="<?php echo esc_url($main_url); ?>" class="<?php echo $active === 'main' ? 'active' : ''; ?>">ראשי</a>
