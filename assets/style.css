@@ -307,6 +307,12 @@
     font-size: 12px;
 }
 
+.kb-customer-row td {
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
 .kbbm-report-table tbody tr.customer-summary:hover,
 .kbbm-report-table tbody tr.customer-summary.open {
     background-color: #005a9e;

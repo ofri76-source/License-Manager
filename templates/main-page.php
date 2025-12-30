@@ -137,14 +137,19 @@ if (!function_exists('kbbm_render_license_table')) {
         }
         ?>
         <div class="m365-table-wrapper">
-            <table class="m365-table kbbm-report-table <?php echo esc_attr($table_classes); ?>">
+            <table class="widefat fixed striped kb-table kbbm-report-table <?php echo esc_attr($table_classes); ?>">
                 <thead>
-                    <tr class="customer-header-row">
-                        <th colspan="2">מספר לקוח</th>
-                        <th colspan="2">שם לקוח</th>
-                        <th colspan="2">Tenant Domain</th>
-                        <th colspan="2">מחזור חיוב</th>
-                        <th colspan="2">סה"כ חיובים</th>
+                    <tr class="plans-header-row">
+                        <th>תוכנית ללקוח</th>
+                        <th>חשבון חיוב</th>
+                        <th>מחיר ללקוח</th>
+                        <th>מחיר רכישה</th>
+                        <th>נרכשו</th>
+                        <th>בשימוש</th>
+                        <th>פנוי</th>
+                        <th>ת. חיוב</th>
+                        <th>חודשי/שנתי</th>
+                        <th>פעולות</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -173,42 +178,36 @@ if (!function_exists('kbbm_render_license_table')) {
                         ?>
                         <?php
                             $has_customer_number = !empty($customer['customer_number']);
-                            $has_customer_name   = !empty($customer['customer_name']);
-                            $has_tenant_domain   = !empty($customer['tenant_domains']);
-                            $has_billing_period  = !empty($billing_period_label);
-                            $has_total_charges   = $total_charges > 0;
-                        ?>
-                        <tr class="customer-summary" data-customer="<?php echo esc_attr($cid); ?>">
-                            <td colspan="2" class="<?php echo $has_customer_number ? '' : 'kbbm-empty-summary'; ?>"><?php echo $has_customer_number ? esc_html($customer['customer_number']) : ''; ?></td>
-                            <td colspan="2" class="<?php echo $has_customer_name ? '' : 'kbbm-empty-summary'; ?>"><?php echo $has_customer_name ? esc_html($customer['customer_name']) : ''; ?></td>
-                            <td colspan="2" class="<?php echo $has_tenant_domain ? '' : 'kbbm-empty-summary'; ?>">
-                                <?php if ($has_tenant_domain): ?>
-                                    <?php foreach ($customer['tenant_domains'] as $domain => $tenant_totals): ?>
-                                        <div class="kbbm-tenant-summary">
-                                            <strong><?php echo esc_html($domain); ?></strong>
-                                            <span>(<?php echo esc_html($tenant_totals['purchased']); ?> רשיונות)</span>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </td>
-                        <td colspan="2" class="<?php echo $has_billing_period ? '' : 'kbbm-empty-summary'; ?>"><?php echo $has_billing_period ? esc_html($billing_period_label) : ''; ?></td>
-                        <td colspan="2" class="<?php echo $has_total_charges ? '' : 'kbbm-empty-summary'; ?>">
-                            <?php echo $has_total_charges ? number_format($total_charges, 2) : ''; ?>
+                        $has_customer_name   = !empty($customer['customer_name']);
+                        $has_tenant_domain   = !empty($customer['tenant_domains']);
+                        $has_billing_period  = !empty($billing_period_label);
+                        $has_total_charges   = $total_charges > 0;
+                    ?>
+                    <tr class="kb-customer-row customer-summary" data-customer="<?php echo esc_attr($cid); ?>">
+                        <td colspan="10">
+                            <?php if ($has_customer_number): ?>
+                                <strong><?php echo esc_html($customer['customer_number']); ?></strong>
+                            <?php endif; ?>
+                            <?php if ($has_customer_name): ?>
+                                | <?php echo esc_html($customer['customer_name']); ?>
+                            <?php endif; ?>
+                            <?php if ($has_tenant_domain): ?>
+                                | <?php foreach ($customer['tenant_domains'] as $domain => $tenant_totals): ?>
+                                    <span class="kbbm-tenant-summary">
+                                        <?php echo esc_html($domain); ?>
+                                        (<?php echo esc_html($tenant_totals['purchased']); ?> רשיונות)
+                                    </span>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            <?php if ($has_billing_period): ?>
+                                | <?php echo esc_html($billing_period_label); ?>
+                            <?php endif; ?>
+                            <?php if ($has_total_charges): ?>
+                                | <?php echo number_format($total_charges, 2); ?>
+                            <?php endif; ?>
                             <?php echo kbbm_api_expiry_badge($cid, $primary_expiries, $expiry_thresholds); ?>
                         </td>
                     </tr>
-                        <tr class="plans-header-row detail-row" data-customer="<?php echo esc_attr($cid); ?>" style="display:none;">
-                            <th>תוכנית ללקוח</th>
-                            <th>חשבון חיוב</th>
-                            <th>מחיר ללקוח</th>
-                            <th>מחיר רכישה</th>
-                            <th>נרכשו</th>
-                            <th>בשימוש</th>
-                            <th>פנוי</th>
-                            <th>ת. חיוב</th>
-                            <th>חודשי/שנתי</th>
-                            <th>פעולות</th>
-                        </tr>
                         <?php
                             $licenses_by_tenant = array();
                             foreach ($customer['licenses'] as $license) {

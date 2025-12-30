@@ -67,6 +67,7 @@ class M365_LM_Admin {
         }
         
         wp_enqueue_style('m365-lm-admin-style', M365_LM_PLUGIN_URL . 'assets/style.css', array(), M365_LM_VERSION);
+        wp_enqueue_style('m365-lm-admin-table-style', M365_LM_PLUGIN_URL . 'assets/admin.css', array('m365-lm-admin-style'), M365_LM_VERSION);
         wp_enqueue_script('m365-lm-admin-script', M365_LM_PLUGIN_URL . 'assets/script.js', array('jquery'), M365_LM_VERSION, true);
         wp_localize_script('m365-lm-admin-script', 'm365Ajax', array(
             'ajaxurl' => admin_url('admin-ajax.php'),
