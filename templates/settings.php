@@ -57,6 +57,7 @@
     <div class="m365-settings-tabs">
         <button class="m365-tab-btn active" data-tab="customers">ניהול לקוחות</button>
         <button class="m365-tab-btn" data-tab="api-setup">הגדרת API</button>
+        <button class="m365-tab-btn" data-tab="partner">API / Partner</button>
         <button class="m365-tab-btn" data-tab="license-types">סוגי רישיונות</button>
         <button class="m365-tab-btn" data-tab="log-settings">הגדרות לוגים</button>
     </div>
@@ -329,6 +330,60 @@
                     <li>אשר את ההרשאות ב-Azure Portal</li>
                 </ol>
             </div>
+        </div>
+    </div>
+
+    <!-- טאב API / Partner -->
+    <div class="m365-tab-content" id="partner-tab">
+        <div class="m365-section">
+            <h3>Partner Mode</h3>
+            <form id="kbbm-partner-settings-form">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="kbbm-partner-enabled" name="partner_enabled" <?php checked(get_option('kbbm_partner_enabled', 0), 1); ?> />
+                        הפעל Partner Mode
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Partner Tenant ID</label>
+                    <input type="text" id="kbbm-partner-tenant-id" name="partner_tenant_id" value="<?php echo esc_attr(get_option('kbbm_partner_tenant_id', '')); ?>">
+                </div>
+
+                <div class="form-group">
+                    <label>Partner Client ID</label>
+                    <input type="text" id="kbbm-partner-client-id" name="partner_client_id" value="<?php echo esc_attr(get_option('kbbm_partner_client_id', '')); ?>">
+                </div>
+
+                <div class="form-group">
+                    <label>Partner Client Secret</label>
+                    <input type="password" id="kbbm-partner-client-secret" name="partner_client_secret" placeholder="••••••••">
+                    <small>השאר ריק כדי לשמור על הסוד הקיים.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Partner Environment</label>
+                    <select id="kbbm-partner-environment" name="partner_environment">
+                        <option value="production" <?php selected(get_option('kbbm_partner_environment', 'production'), 'production'); ?>>production</option>
+                        <option value="sandbox" <?php selected(get_option('kbbm_partner_environment', 'production'), 'sandbox'); ?>>sandbox</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="kbbm-graph-enabled" name="graph_enabled" <?php checked(get_option('kbbm_graph_enabled', 0), 1); ?> />
+                        הפעל Graph Enrichment (כבוי בשלב 1)
+                    </label>
+                    <small>Stage 2 משתמש באותם פרטי חיבור כברירת מחדל.</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="m365-btn m365-btn-primary">שמור הגדרות</button>
+                    <button type="button" id="kbbm-partner-test" class="m365-btn m365-btn-secondary">Test Partner Connection</button>
+                    <button type="button" id="kbbm-partner-sync-customers" class="m365-btn m365-btn-secondary">Sync Customers</button>
+                    <button type="button" id="kbbm-partner-sync-licenses" class="m365-btn m365-btn-secondary">Sync Licenses</button>
+                </div>
+            </form>
         </div>
     </div>
 

@@ -15,6 +15,9 @@ class M365_LM_Admin {
         add_action('wp_ajax_nopriv_kbbm_generate_script', array($this, 'ajax_generate_script'));
         add_action('wp_ajax_kbbm_save_settings', array($this, 'ajax_save_settings'));
         add_action('wp_ajax_kbbm_add_tenant', array($this, 'ajax_add_tenant'));
+        add_action('wp_ajax_kbbm_partner_test', array($this, 'ajax_partner_test'));
+        add_action('wp_ajax_kbbm_partner_sync_customers', array($this, 'ajax_partner_sync_customers'));
+        add_action('wp_ajax_kbbm_partner_sync_licenses', array($this, 'ajax_partner_sync_licenses'));
     }
     
     // הוספת תפריט ניהול
@@ -403,10 +406,26 @@ class M365_LM_Admin {
         $warning_days = $warning_days >= 0 ? $warning_days : 60;
         $danger_days  = $danger_days >= 0 ? $danger_days : 30;
 
+        $partner_enabled = isset($_POST['partner_enabled']) ? 1 : 0;
+        $partner_tenant_id = sanitize_text_field($_POST['partner_tenant_id'] ?? '');
+        $partner_client_id = sanitize_text_field($_POST['partner_client_id'] ?? '');
+        $partner_client_secret = sanitize_textarea_field($_POST['partner_client_secret'] ?? '');
+        $partner_environment = sanitize_text_field($_POST['partner_environment'] ?? 'production');
+        $graph_enabled = isset($_POST['graph_enabled']) ? 1 : 0;
+
         update_option('kbbm_log_retention_days', $retention_days);
         update_option('kbbm_use_test_server', $use_test_server);
         update_option('kbbm_expiry_warning_days', $warning_days);
         update_option('kbbm_expiry_danger_days', $danger_days);
+        update_option('kbbm_partner_enabled', $partner_enabled);
+        update_option('kbbm_partner_tenant_id', $partner_tenant_id);
+        update_option('kbbm_partner_client_id', $partner_client_id);
+        update_option('kbbm_partner_environment', $partner_environment);
+        update_option('kbbm_graph_enabled', $graph_enabled);
+
+        if (!empty($partner_client_secret)) {
+            update_option('kbbm_partner_client_secret', $partner_client_secret);
+        }
 
         // בצע ניקוי מיידי בהתאם לערך המעודכן
         M365_LM_Database::prune_logs($retention_days);
@@ -417,7 +436,106 @@ class M365_LM_Admin {
             'use_test_server' => $use_test_server,
             'api_expiry_warning_days' => $warning_days,
             'api_expiry_danger_days' => $danger_days,
+            'partner_enabled' => $partner_enabled,
+            'graph_enabled' => $graph_enabled,
         ));
+    }
+
+    private function build_partner_connector() {
+        $tenant_id = get_option('kbbm_partner_tenant_id', '');
+        $client_id = get_option('kbbm_partner_client_id', '');
+        $client_secret = get_option('kbbm_partner_client_secret', '');
+        $environment = get_option('kbbm_partner_environment', 'production');
+
+        return new PartnerCenterConnector($tenant_id, $client_id, $client_secret, $environment);
+    }
+
+    private function build_graph_connector() {
+        $tenant_id = get_option('kbbm_partner_tenant_id', '');
+        $client_id = get_option('kbbm_partner_client_id', '');
+        $client_secret = get_option('kbbm_partner_client_secret', '');
+        return new GraphGdapConnector($tenant_id, $client_id, $client_secret);
+    }
+
+    private function build_sync_service() {
+        $partner_enabled = (int) get_option('kbbm_partner_enabled', 0) === 1;
+        $graph_enabled = (int) get_option('kbbm_graph_enabled', 0) === 1;
+
+        return new M365_LM_Sync_Service(
+            $this->build_partner_connector(),
+            $this->build_graph_connector(),
+            $partner_enabled,
+            $graph_enabled
+        );
+    }
+
+    private function log_partner_result($context, $result, $extra = array()) {
+        $body_snippet = '';
+        if (!empty($result['body'])) {
+            $body_snippet = substr(wp_json_encode($result['body']), 0, 500);
+        }
+        $data = array_merge($extra, array(
+            'http_code' => $result['code'] ?? null,
+            'body_snippet' => $body_snippet,
+        ));
+        $message = $result['message'] ?? ($result['success'] ? 'OK' : 'Failed');
+        M365_LM_Database::log_event('info', $context, $message, null, $data);
+    }
+
+    public function ajax_partner_test() {
+        check_ajax_referer('m365_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'אין הרשאה'));
+        }
+
+        $connector = $this->build_partner_connector();
+        $result = $connector->getAccessToken();
+        $this->log_partner_result('partner_auth', $result);
+
+        if (!empty($result['success'])) {
+            wp_send_json_success(array('message' => 'Partner connection OK'));
+        }
+
+        wp_send_json_error(array('message' => $result['message'] ?? 'Partner connection failed'));
+    }
+
+    public function ajax_partner_sync_customers() {
+        check_ajax_referer('m365_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'אין הרשאה'));
+        }
+
+        $service = $this->build_sync_service();
+        $result = $service->syncCustomers();
+
+        if (!empty($result['http'])) {
+            $this->log_partner_result('partner_sync_customers', $result['http'], array('count' => $result['count'] ?? 0));
+        }
+
+        if (!empty($result['success'])) {
+            wp_send_json_success(array('message' => 'סנכרון לקוחות הושלם', 'count' => $result['count'] ?? 0));
+        }
+
+        wp_send_json_error(array('message' => $result['message'] ?? 'שגיאה בסנכרון לקוחות'));
+    }
+
+    public function ajax_partner_sync_licenses() {
+        check_ajax_referer('m365_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'אין הרשאה'));
+        }
+
+        $service = $this->build_sync_service();
+        $result = $service->syncLicenses();
+
+        if (!empty($result['success'])) {
+            wp_send_json_success(array('message' => 'סנכרון רישיונות הושלם', 'count' => $result['count'] ?? 0));
+        }
+
+        wp_send_json_error(array('message' => $result['message'] ?? 'שגיאה בסנכרון רישיונות'));
     }
 }
 

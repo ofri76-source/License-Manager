@@ -210,7 +210,7 @@
 }
 
 .m365-table tbody td {
-    padding: 12px;
+    padding: 6px 4px;
     border: 1px solid #ddd;
     text-align: center;
     word-break: break-word;
@@ -299,6 +299,12 @@
     font-weight: bold;
     cursor: pointer;
     font-size: 13px;
+    line-height: 1.2;
+}
+
+.kbbm-report-table tbody tr.customer-summary td {
+    padding: 6px 4px;
+    font-size: 12px;
 }
 
 .kbbm-report-table tbody tr.customer-summary:hover,

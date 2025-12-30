@@ -21,6 +21,8 @@ if (!defined('M365_LM_DISPLAY_VERSION')) {
 // טעינת קבצים נדרשים
 require_once M365_LM_PLUGIN_DIR . 'includes/class-database.php';
 require_once M365_LM_PLUGIN_DIR . 'includes/class-api-connector.php';
+require_once M365_LM_PLUGIN_DIR . 'includes/class-external-connector.php';
+require_once M365_LM_PLUGIN_DIR . 'includes/class-sync-service.php';
 require_once M365_LM_PLUGIN_DIR . 'includes/class-shortcodes.php';
 require_once M365_LM_PLUGIN_DIR . 'includes/class-admin.php';
 

@@ -1154,6 +1154,92 @@ jQuery(document).ready(function($) {
         });
     });
 
+    $(document).on('submit', '#kbbm-partner-settings-form', function(e) {
+        e.preventDefault();
+
+        const payload = {
+            action: 'kbbm_save_settings',
+            nonce: m365Ajax.nonce,
+            partner_enabled: $('#kbbm-partner-enabled').is(':checked') ? 1 : 0,
+            partner_tenant_id: $('#kbbm-partner-tenant-id').val(),
+            partner_client_id: $('#kbbm-partner-client-id').val(),
+            partner_client_secret: $('#kbbm-partner-client-secret').val(),
+            partner_environment: $('#kbbm-partner-environment').val(),
+            graph_enabled: $('#kbbm-graph-enabled').is(':checked') ? 1 : 0
+        };
+
+        $.post(m365Ajax.ajaxurl, payload, function(response) {
+            if (response && response.success) {
+                showMessage('success', 'הגדרות Partner נשמרו');
+                $('#kbbm-partner-client-secret').val('');
+            } else {
+                const msg = response && response.data && response.data.message ? response.data.message : 'שמירת הגדרות Partner נכשלה';
+                showMessage('error', msg);
+            }
+        }).fail(function() {
+            showMessage('error', 'שמירת הגדרות Partner נכשלה');
+        });
+    });
+
+    $(document).on('click', '#kbbm-partner-test', function() {
+        const button = $(this);
+        button.prop('disabled', true).text('בודק...');
+
+        $.post(m365Ajax.ajaxurl, {
+            action: 'kbbm_partner_test',
+            nonce: m365Ajax.nonce
+        }, function(response) {
+            if (response && response.success) {
+                showMessage('success', response.data && response.data.message ? response.data.message : 'חיבור Partner תקין');
+            } else {
+                const msg = response && response.data && response.data.message ? response.data.message : 'חיבור Partner נכשל';
+                showMessage('error', msg);
+            }
+        }).always(function() {
+            button.prop('disabled', false).text('Test Partner Connection');
+        });
+    });
+
+    $(document).on('click', '#kbbm-partner-sync-customers', function() {
+        const button = $(this);
+        button.prop('disabled', true).text('מסנכרן...');
+
+        $.post(m365Ajax.ajaxurl, {
+            action: 'kbbm_partner_sync_customers',
+            nonce: m365Ajax.nonce
+        }, function(response) {
+            if (response && response.success) {
+                const count = response.data && typeof response.data.count !== 'undefined' ? response.data.count : 0;
+                showMessage('success', `סנכרון לקוחות הושלם (${count})`);
+            } else {
+                const msg = response && response.data && response.data.message ? response.data.message : 'סנכרון לקוחות נכשל';
+                showMessage('error', msg);
+            }
+        }).always(function() {
+            button.prop('disabled', false).text('Sync Customers');
+        });
+    });
+
+    $(document).on('click', '#kbbm-partner-sync-licenses', function() {
+        const button = $(this);
+        button.prop('disabled', true).text('מסנכרן...');
+
+        $.post(m365Ajax.ajaxurl, {
+            action: 'kbbm_partner_sync_licenses',
+            nonce: m365Ajax.nonce
+        }, function(response) {
+            if (response && response.success) {
+                const count = response.data && typeof response.data.count !== 'undefined' ? response.data.count : 0;
+                showMessage('success', `סנכרון רישיונות הושלם (${count})`);
+            } else {
+                const msg = response && response.data && response.data.message ? response.data.message : 'סנכרון רישיונות נכשל';
+                showMessage('error', msg);
+            }
+        }).always(function() {
+            button.prop('disabled', false).text('Sync Licenses');
+        });
+    });
+
     function initializeLogTable(context) {
         const logTable = (context || $(document)).find('.kbbm-log-table').first();
         if (!logTable.length || logTable.data('kbbmInitialized')) {
