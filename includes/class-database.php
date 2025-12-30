@@ -17,6 +17,7 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            is_self_paying tinyint(1) DEFAULT 0,
             last_connection_status varchar(20) DEFAULT 'unknown',
             last_connection_message text DEFAULT NULL,
             last_connection_time datetime DEFAULT NULL,
@@ -36,6 +37,7 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            is_self_paying tinyint(1) DEFAULT 0,
             last_connection_status varchar(20) DEFAULT 'unknown',
             last_connection_message text DEFAULT NULL,
             last_connection_time datetime DEFAULT NULL,
@@ -170,6 +172,8 @@ class M365_LM_Database {
         self::maybe_add_column($types_table, 'display_name', "display_name VARCHAR(255) DEFAULT '' AFTER name");
         self::maybe_add_column($types_table, 'show_in_main', "show_in_main TINYINT(1) DEFAULT 1 AFTER default_billing_frequency");
         self::maybe_add_column($kb_customer_tenants, 'api_expiry_date', "api_expiry_date DATE DEFAULT NULL AFTER client_secret");
+        self::maybe_add_column($table_customers, 'is_self_paying', "is_self_paying TINYINT(1) DEFAULT 0 AFTER tenant_domain");
+        self::maybe_add_column($kb_customers_table, 'is_self_paying', "is_self_paying TINYINT(1) DEFAULT 0 AFTER tenant_domain");
     }
     
     // פונקציות CRUD ללקוחות
@@ -234,6 +238,28 @@ class M365_LM_Database {
         ));
     }
 
+    /**
+     * מחזיר מפה של customer_id => api_expiry_date עבור טננט ראשי.
+     */
+    public static function get_primary_tenant_expiries() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'kb_billing_customer_tenants';
+
+        $rows = $wpdb->get_results(
+            "SELECT customer_id, api_expiry_date FROM {$table} WHERE is_primary = 1",
+            OBJECT
+        );
+
+        $map = array();
+        if (!empty($rows)) {
+            foreach ($rows as $row) {
+                $map[intval($row->customer_id)] = $row->api_expiry_date;
+            }
+        }
+
+        return $map;
+    }
+
     public static function get_tenant_by_id($tenant_row_id) {
         global $wpdb;
         $table = $wpdb->prefix . 'kb_billing_customer_tenants';
@@ -252,7 +278,7 @@ class M365_LM_Database {
         $where = $include_deleted ? "" : "WHERE l.is_deleted = 0";
         
         return $wpdb->get_results("
-            SELECT l.*, c.customer_number, c.customer_name, c.tenant_domain
+            SELECT l.*, c.customer_number, c.customer_name, c.tenant_domain, COALESCE(c.is_self_paying, 0) AS is_self_paying
             FROM $table_licenses l
             LEFT JOIN $table_customers c ON l.customer_id = c.id
             $where
@@ -676,6 +702,19 @@ class M365_LM_Database {
                 "DELETE FROM {$table} WHERE event_time < DATE_SUB(NOW(), INTERVAL %d DAY)",
                 $days
             )
+        );
+    }
+
+    public static function get_api_expiry_thresholds() {
+        $warning_days = intval(get_option('kbbm_expiry_warning_days', 60));
+        $danger_days  = intval(get_option('kbbm_expiry_danger_days', 30));
+
+        $warning_days = $warning_days >= 0 ? $warning_days : 60;
+        $danger_days  = $danger_days >= 0 ? $danger_days : 30;
+
+        return array(
+            'warning' => $warning_days,
+            'danger'  => $danger_days,
         );
     }
 

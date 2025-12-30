@@ -179,7 +179,8 @@ class M365_LM_Admin {
             'tenant_id' => sanitize_text_field($_POST['tenant_id']),
             'client_id' => sanitize_text_field($_POST['client_id']),
             'client_secret' => sanitize_textarea_field($_POST['client_secret']),
-            'tenant_domain' => sanitize_text_field($_POST['tenant_domain'])
+            'tenant_domain' => sanitize_text_field($_POST['tenant_domain']),
+            'is_self_paying' => isset($_POST['is_self_paying']) ? 1 : 0,
         );
 
         $tenants_json = isset($_POST['tenants']) ? wp_unslash($_POST['tenants']) : '[]';
@@ -204,7 +205,7 @@ class M365_LM_Admin {
                 'client_id'       => sanitize_text_field($tenant['client_id'] ?? ''),
                 'client_secret'   => sanitize_textarea_field($tenant['client_secret'] ?? ''),
                 'tenant_domain'   => sanitize_text_field($tenant['tenant_domain'] ?? ''),
-                'api_expiry_date' => sanitize_text_field($tenant['api_expiry_date'] ?? ''),
+                'api_expiry_date' => self::normalize_api_expiry_date($tenant['api_expiry_date'] ?? ''),
             );
         }
 
@@ -246,6 +247,7 @@ class M365_LM_Admin {
         $client_id     = sanitize_text_field($_POST['client_id'] ?? '');
         $client_secret = sanitize_textarea_field($_POST['client_secret'] ?? '');
         $tenant_domain = sanitize_text_field($_POST['tenant_domain'] ?? '');
+        $api_expiry    = self::normalize_api_expiry_date($_POST['api_expiry_date'] ?? '');
 
         if ($tenant_id === '') {
             wp_send_json_error(array('message' => 'Tenant ID נדרש'));
@@ -268,7 +270,7 @@ class M365_LM_Admin {
             'client_id'     => $client_id,
             'client_secret' => $client_secret,
             'tenant_domain' => $tenant_domain,
-            'api_expiry_date' => sanitize_text_field($_POST['api_expiry_date'] ?? ''),
+            'api_expiry_date' => $api_expiry,
         );
 
         M365_LM_Database::replace_customer_tenants($customer_id, $clean);
@@ -291,7 +293,25 @@ class M365_LM_Admin {
             wp_send_json_error(array('message' => 'לקוח לא נמצא'));
         }
     }
-    
+
+    /**
+     * Adds 2 years to a given date string and returns it as Y-m-d.
+     */
+    private static function normalize_api_expiry_date($raw_date) {
+        $raw_date = isset($raw_date) ? trim((string) $raw_date) : '';
+        if ($raw_date === '') {
+            return '';
+        }
+
+        try {
+            $dt = new DateTime($raw_date);
+            $dt->modify('+2 years');
+            return $dt->format('Y-m-d');
+        } catch (Exception $e) {
+            return sanitize_text_field($raw_date);
+        }
+    }
+
     // AJAX - מחיקת לקוח
     public function ajax_delete_customer() {
         check_ajax_referer('m365_nonce', 'nonce');
@@ -377,8 +397,16 @@ class M365_LM_Admin {
         $retention_days = $retention_days > 0 ? $retention_days : 120;
         $use_test_server = isset($_POST['use_test_server']) ? (int) $_POST['use_test_server'] : 0;
 
+        $warning_days = isset($_POST['api_expiry_warning_days']) ? intval($_POST['api_expiry_warning_days']) : 60;
+        $danger_days  = isset($_POST['api_expiry_danger_days']) ? intval($_POST['api_expiry_danger_days']) : 30;
+
+        $warning_days = $warning_days >= 0 ? $warning_days : 60;
+        $danger_days  = $danger_days >= 0 ? $danger_days : 30;
+
         update_option('kbbm_log_retention_days', $retention_days);
         update_option('kbbm_use_test_server', $use_test_server);
+        update_option('kbbm_expiry_warning_days', $warning_days);
+        update_option('kbbm_expiry_danger_days', $danger_days);
 
         // בצע ניקוי מיידי בהתאם לערך המעודכן
         M365_LM_Database::prune_logs($retention_days);
@@ -387,6 +415,8 @@ class M365_LM_Admin {
             'message' => 'ההגדרות נשמרו בהצלחה',
             'log_retention_days' => $retention_days,
             'use_test_server' => $use_test_server,
+            'api_expiry_warning_days' => $warning_days,
+            'api_expiry_danger_days' => $danger_days,
         ));
     }
 }
