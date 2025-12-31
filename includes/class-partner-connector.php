@@ -2,6 +2,23 @@
 if (!defined('ABSPATH')) exit;
 
 class M365_LM_Partner_Connector {
+    private static function decode_jwt_payload($jwt) {
+        $parts = explode('.', $jwt);
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        $payload = strtr($parts[1], '-_', '+/');
+        $pad = strlen($payload) % 4;
+        if ($pad) {
+            $payload .= str_repeat('=', 4 - $pad);
+        }
+        $json = base64_decode($payload);
+        if ($json === false) {
+            return null;
+        }
+        return json_decode($json, true);
+    }
 
     /**
      * Get saved partner settings.
@@ -35,6 +52,18 @@ class M365_LM_Partner_Connector {
             'client_id'     => $settings['client_id'],
             'client_secret' => $settings['client_secret'],
             'scope'         => 'https://api.partnercenter.microsoft.com/.default',
+        );
+
+        M365_LM_Database::log_event(
+            'info',
+            $context,
+            'Partner token request details',
+            null,
+            array(
+                'token_url' => $token_url,
+                'is_v2'     => strpos($token_url, '/oauth2/v2.0/') !== false,
+                'scope'     => $body['scope'],
+            )
         );
 
         $response = wp_remote_post($token_url, array(
@@ -81,6 +110,20 @@ class M365_LM_Partner_Connector {
             );
             return new WP_Error('partner_token_missing', 'Partner token missing access token');
         }
+
+        $payload = self::decode_jwt_payload($decoded['access_token']);
+        M365_LM_Database::log_event(
+            'info',
+            $context,
+            'Partner token diagnostics',
+            null,
+            array(
+                'aud'   => $payload['aud'] ?? null,
+                'tid'   => $payload['tid'] ?? null,
+                'appid' => $payload['appid'] ?? null,
+                'roles' => $payload['roles'] ?? null,
+            )
+        );
 
         return $decoded['access_token'];
     }
