@@ -12,6 +12,7 @@ class PartnerCenterConnector implements IExternalDataConnector {
     private $client_id;
     private $client_secret;
     private $environment;
+    private $refresh_token;
 
     private function decodeJwtPayload($jwt) {
         $parts = explode('.', $jwt);
@@ -36,6 +37,7 @@ class PartnerCenterConnector implements IExternalDataConnector {
         $this->client_id = $client_id;
         $this->client_secret = $client_secret;
         $this->environment = $environment === 'sandbox' ? 'sandbox' : 'production';
+        $this->refresh_token = get_option('kbbm_partner_refresh_token', '');
     }
 
     public function getAccessToken() {
@@ -46,7 +48,14 @@ class PartnerCenterConnector implements IExternalDataConnector {
         }
 
         $url = "https://login.microsoftonline.com/{$this->tenant_id}/oauth2/v2.0/token";
-        $body = array(
+        $use_refresh = !empty($this->refresh_token);
+        $body = $use_refresh ? array(
+            'client_id' => $this->client_id,
+            'client_secret' => $this->client_secret,
+            'grant_type' => 'refresh_token',
+            'refresh_token' => $this->refresh_token,
+            'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
+        ) : array(
             'client_id' => $this->client_id,
             'client_secret' => $this->client_secret,
             'grant_type' => 'client_credentials',
@@ -62,6 +71,7 @@ class PartnerCenterConnector implements IExternalDataConnector {
                 'token_url' => $url,
                 'is_v2'     => strpos($url, '/oauth2/v2.0/') !== false,
                 'scope'     => $body['scope'],
+                'grant_type' => $body['grant_type'],
             )
         );
 
@@ -93,6 +103,10 @@ class PartnerCenterConnector implements IExternalDataConnector {
                     'roles' => $token_payload['roles'] ?? null,
                 )
             );
+            if (!empty($payload['refresh_token'])) {
+                update_option('kbbm_partner_refresh_token', $payload['refresh_token']);
+                $this->refresh_token = $payload['refresh_token'];
+            }
             return array('success' => true, 'token' => $payload['access_token']);
         }
 
@@ -112,11 +126,13 @@ class PartnerCenterConnector implements IExternalDataConnector {
         }
 
         $url = 'https://api.partnercenter.microsoft.com/v1/customers';
+        $headers = array(
+            'Authorization' => 'Bearer ' . $token['token'],
+            'Accept' => 'application/json',
+            'MS-Contract-Version' => 'v1',
+        );
         $response = wp_remote_get($url, array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $token['token'],
-                'Accept' => 'application/json',
-            ),
+            'headers' => $headers,
             'timeout' => 45,
         ));
 
@@ -127,6 +143,22 @@ class PartnerCenterConnector implements IExternalDataConnector {
         $code = wp_remote_retrieve_response_code($response);
         $body_raw = wp_remote_retrieve_body($response);
         $payload = json_decode($body_raw, true);
+
+        $headers_for_log = $headers;
+        if (!empty($headers_for_log['Authorization'])) {
+            $headers_for_log['Authorization'] = 'Bearer ***';
+        }
+        M365_LM_Database::log_event(
+            'info',
+            'partner_fetch_customers',
+            'Partner customers response',
+            null,
+            array(
+                'status' => $code,
+                'headers' => $headers_for_log,
+                'body' => $body_raw,
+            )
+        );
 
         if ($code === 200 && isset($payload['items'])) {
             return array('success' => true, 'customers' => $payload['items'], 'code' => $code);

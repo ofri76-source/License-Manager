@@ -509,6 +509,13 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        const params = new URLSearchParams(window.location.search);
+        const requestedTab = params.get('kbbm_tab');
+        if (requestedTab) {
+            setActiveTab(requestedTab);
+            return;
+        }
+
         const savedTab = localStorage.getItem(tabStorageKey);
         if (savedTab) {
             setActiveTab(savedTab);
@@ -1198,6 +1205,13 @@ jQuery(document).ready(function($) {
         }).always(function() {
             button.prop('disabled', false).text('Test Partner Connection');
         });
+    });
+
+    $(document).on('click', '#kbbm-partner-authorize', function() {
+        const url = $(this).data('url');
+        if (url) {
+            window.location.href = url;
+        }
     });
 
     $(document).on('click', '#kbbm-partner-sync-customers', function() {

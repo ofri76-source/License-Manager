@@ -18,6 +18,7 @@ class M365_LM_Admin {
         add_action('wp_ajax_kbbm_partner_test', array($this, 'ajax_partner_test'));
         add_action('wp_ajax_kbbm_partner_sync_customers', array($this, 'ajax_partner_sync_customers'));
         add_action('wp_ajax_kbbm_partner_sync_licenses', array($this, 'ajax_partner_sync_licenses'));
+        add_action('admin_post_kbbm_partner_authorize', array($this, 'handle_partner_authorize'));
     }
     
     // הוספת תפריט ניהול
@@ -537,6 +538,110 @@ class M365_LM_Admin {
         }
 
         wp_send_json_error(array('message' => $result['message'] ?? 'שגיאה בסנכרון רישיונות'));
+    }
+
+    public function handle_partner_authorize() {
+        if (!current_user_can('manage_options')) {
+            wp_die('אין הרשאה');
+        }
+
+        $tenant_id = sanitize_text_field(get_option('kbbm_partner_tenant_id', ''));
+        $client_id = sanitize_text_field(get_option('kbbm_partner_client_id', ''));
+        $client_secret = get_option('kbbm_partner_client_secret', '');
+        $redirect_uri = admin_url('admin-post.php?action=kbbm_partner_authorize');
+        $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
+
+        if (isset($_GET['code'])) {
+            $state = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
+            if (empty($state) || !wp_verify_nonce($state, 'kbbm_partner_oauth_state')) {
+                wp_safe_redirect(add_query_arg('partner_auth', 'invalid_state', $return_url));
+                exit;
+            }
+
+            $code = sanitize_text_field(wp_unslash($_GET['code']));
+            $token_url = sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/token', $tenant_id);
+            $body = array(
+                'client_id' => $client_id,
+                'client_secret' => $client_secret,
+                'grant_type' => 'authorization_code',
+                'code' => $code,
+                'redirect_uri' => $redirect_uri,
+                'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
+            );
+
+            M365_LM_Database::log_event(
+                'info',
+                'partner_auth_debug',
+                'Partner authorization code exchange',
+                null,
+                array(
+                    'token_url' => $token_url,
+                    'is_v2' => strpos($token_url, '/oauth2/v2.0/') !== false,
+                    'scope' => $body['scope'],
+                )
+            );
+
+            $response = wp_remote_post($token_url, array(
+                'body' => $body,
+                'timeout' => 30,
+            ));
+
+            if (is_wp_error($response)) {
+                M365_LM_Database::log_event(
+                    'error',
+                    'partner_auth_debug',
+                    'Partner auth code exchange failed',
+                    null,
+                    array('error' => $response->get_error_message())
+                );
+                wp_safe_redirect(add_query_arg('partner_auth', 'request_failed', $return_url));
+                exit;
+            }
+
+            $code_status = wp_remote_retrieve_response_code($response);
+            $body_raw = wp_remote_retrieve_body($response);
+            $payload = json_decode($body_raw, true);
+
+            if ($code_status >= 200 && $code_status < 300 && !empty($payload['refresh_token'])) {
+                update_option('kbbm_partner_refresh_token', $payload['refresh_token']);
+                wp_safe_redirect(add_query_arg('partner_auth', 'success', $return_url));
+                exit;
+            }
+
+            M365_LM_Database::log_event(
+                'error',
+                'partner_auth_debug',
+                'Partner auth code exchange returned no refresh token',
+                null,
+                array(
+                    'status' => $code_status,
+                    'body' => $payload,
+                )
+            );
+
+            wp_safe_redirect(add_query_arg('partner_auth', 'missing_refresh_token', $return_url));
+            exit;
+        }
+
+        check_admin_referer('kbbm_partner_authorize');
+
+        if (empty($tenant_id) || empty($client_id) || empty($client_secret)) {
+            wp_safe_redirect(add_query_arg('partner_auth', 'missing_credentials', $return_url));
+            exit;
+        }
+
+        $state = wp_create_nonce('kbbm_partner_oauth_state');
+        $authorize_url = add_query_arg(array(
+            'client_id' => $client_id,
+            'response_type' => 'code',
+            'redirect_uri' => $redirect_uri,
+            'response_mode' => 'query',
+            'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
+            'state' => $state,
+        ), sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/authorize', $tenant_id));
+
+        wp_safe_redirect($authorize_url);
+        exit;
     }
 }
 

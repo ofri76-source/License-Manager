@@ -13,6 +13,9 @@
         $api_expiry_warning_days = intval(get_option('kbbm_expiry_warning_days', 60));
         $api_expiry_danger_days  = intval(get_option('kbbm_expiry_danger_days', 30));
         $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.21.00';
+        $partner_refresh_token = get_option('kbbm_partner_refresh_token', '');
+        $partner_auth_status = isset($_GET['partner_auth']) ? sanitize_text_field(wp_unslash($_GET['partner_auth'])) : '';
+        $partner_authorize_url = wp_nonce_url(admin_url('admin-post.php?action=kbbm_partner_authorize'), 'kbbm_partner_authorize');
 
         if (!function_exists('kbbm_format_api_expiry')) {
             function kbbm_format_api_expiry($date_value) {
@@ -337,6 +340,19 @@
     <div class="m365-tab-content" id="partner-tab">
         <div class="m365-section">
             <h3>Partner Mode</h3>
+            <?php if ($partner_auth_status): ?>
+                <div class="m365-message <?php echo $partner_auth_status === 'success' ? 'success' : 'error'; ?>" style="display:block;">
+                    <?php if ($partner_auth_status === 'success'): ?>
+                        הסמכת Partner נשמרה בהצלחה.
+                    <?php elseif ($partner_auth_status === 'missing_credentials'): ?>
+                        חסרים פרטי Partner (Tenant ID / Client ID / Secret).
+                    <?php elseif ($partner_auth_status === 'invalid_state'): ?>
+                        אימות Partner נכשל (state לא תקין).
+                    <?php else: ?>
+                        אימות Partner נכשל. בדוק לוגים.
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
             <form id="kbbm-partner-settings-form">
                 <div class="form-group">
                     <label>
@@ -379,9 +395,21 @@
 
                 <div class="form-actions">
                     <button type="submit" class="m365-btn m365-btn-primary">שמור הגדרות</button>
+                    <button type="button" id="kbbm-partner-authorize" class="m365-btn m365-btn-secondary" data-url="<?php echo esc_url($partner_authorize_url); ?>">
+                        Authorize Partner
+                    </button>
                     <button type="button" id="kbbm-partner-test" class="m365-btn m365-btn-secondary">Test Partner Connection</button>
                     <button type="button" id="kbbm-partner-sync-customers" class="m365-btn m365-btn-secondary">Sync Customers</button>
                     <button type="button" id="kbbm-partner-sync-licenses" class="m365-btn m365-btn-secondary">Sync Licenses</button>
+                </div>
+                <div class="form-group">
+                    <small>
+                        <?php if (!empty($partner_refresh_token)): ?>
+                            מצב אימות: פעיל (נשמר refresh token).
+                        <?php else: ?>
+                            מצב אימות: לא בוצע (נדרש user_impersonation + offline_access).
+                        <?php endif; ?>
+                    </small>
                 </div>
             </form>
         </div>
