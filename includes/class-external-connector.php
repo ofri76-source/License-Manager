@@ -43,16 +43,31 @@ class PartnerCenterConnector implements IExternalDataConnector {
     public function getAccessToken() {
         $cache_key = 'kbbm_partner_access_token';
         $cached = get_transient($cache_key);
+        $cached_token = null;
+        $cached_source = null;
+        $cached_grant = null;
         if (!empty($cached)) {
-            return array(
-                'success' => true,
-                'token' => $cached,
-                'token_source' => 'cache',
-            );
+            if (is_array($cached) && !empty($cached['token'])) {
+                $cached_token = $cached['token'];
+                $cached_source = $cached['token_source'] ?? null;
+                $cached_grant = $cached['grant_type'] ?? null;
+            } elseif (is_string($cached)) {
+                $cached_token = $cached;
+                $cached_source = 'client_credentials';
+                $cached_grant = 'client_credentials';
+            }
         }
 
         $url = "https://login.microsoftonline.com/{$this->tenant_id}/oauth2/v2.0/token";
         $use_refresh = !empty($this->refresh_token);
+        if (!empty($cached_token) && (!$use_refresh || $cached_source === 'delegated_refresh_token')) {
+            return array(
+                'success' => true,
+                'token' => $cached_token,
+                'token_source' => 'cache',
+                'grant_type' => $cached_grant,
+            );
+        }
         $body = $use_refresh ? array(
             'client_id' => $this->client_id,
             'client_secret' => $this->client_secret,
@@ -94,7 +109,11 @@ class PartnerCenterConnector implements IExternalDataConnector {
         $payload = json_decode($body_raw, true);
 
         if ($code === 200 && isset($payload['access_token'])) {
-            set_transient($cache_key, $payload['access_token'], 50 * MINUTE_IN_SECONDS);
+            set_transient($cache_key, array(
+                'token' => $payload['access_token'],
+                'token_source' => $use_refresh ? 'delegated_refresh_token' : 'client_credentials',
+                'grant_type' => $body['grant_type'],
+            ), 50 * MINUTE_IN_SECONDS);
             $token_payload = $this->decodeJwtPayload($payload['access_token']);
             M365_LM_Database::log_event(
                 'info',
