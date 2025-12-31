@@ -131,7 +131,7 @@ foreach ($grouped_customers as $cid => $customer_data) {
 }
 
 if (!function_exists('kbbm_render_license_table')) {
-    function kbbm_render_license_table($grouped_customers, $billing_period_label, $empty_message = '', $table_classes = '') {
+    function kbbm_render_license_table($grouped_customers, $billing_period_label, $primary_expiries, $expiry_thresholds, $empty_message = '', $table_classes = '') {
         if ($empty_message === '') {
             $empty_message = __('אין נתונים להצגה. בצע סנכרון ראשוני.', 'm365-license-manager');
         }
@@ -311,7 +311,7 @@ if (!function_exists('kbbm_render_license_table')) {
 
     <div class="kbbm-table-section">
         <h3 class="kbbm-table-title">לקוחות שאני מחייב</h3>
-        <?php kbbm_render_license_table($managed_customers, $billing_period_label); ?>
+        <?php kbbm_render_license_table($managed_customers, $billing_period_label, $primary_expiries, $expiry_thresholds); ?>
     </div>
 
     <div class="kbbm-table-section">
@@ -319,6 +319,8 @@ if (!function_exists('kbbm_render_license_table')) {
         <?php kbbm_render_license_table(
             $self_paying_customers,
             $billing_period_label,
+            $primary_expiries,
+            $expiry_thresholds,
             __('אין לקוחות שמשלמים בעצמם להצגה.', 'm365-license-manager'),
             'kbbm-self-paying-table'
         ); ?>
