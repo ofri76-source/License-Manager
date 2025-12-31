@@ -68,8 +68,21 @@ jQuery(document).ready(function($) {
             });
         });
 
+        additionalTenantsContainer.find('.kbbm-tenant-card').each(function() {
+            const card = $(this);
+            tenants.push({
+                tenant_id: card.find('.kbbm-tenant-id').val() || '',
+                tenant_domain: card.find('.kbbm-tenant-domain').val() || '',
+                client_id: card.find('.kbbm-tenant-client-id').val() || '',
+                client_secret: card.find('.kbbm-tenant-client-secret').val() || '',
+                api_expiry_date: card.find('.kbbm-tenant-expiry').val() || ''
+            });
+        });
+
         $('#customer-tenants-json').val(JSON.stringify(tenants));
     }
+
+    window.kbbmSerializeTenants = serializeTenants;
 
     function addAdditionalTenantRow(data = {}) {
         const row = $(`
@@ -166,7 +179,7 @@ jQuery(document).ready(function($) {
     }
 
     // סנכרון רישיונות
-    $('#sync-licenses').on('click', function() {
+    $(document).on('click', '#sync-licenses', function() {
         const customerId = $('#customer-select').val();
 
         if (!customerId) {
@@ -207,7 +220,7 @@ jQuery(document).ready(function($) {
     });
 
     // סנכרון כל הלקוחות
-    $('#sync-all-licenses').on('click', function() {
+    $(document).on('click', '#sync-all-licenses', function() {
         const button = $(this);
         button.prop('disabled', true).text('מסנכרן הכל...');
 
@@ -341,7 +354,7 @@ jQuery(document).ready(function($) {
     });
 
     // שמירת רישיון
-    $('#edit-license-form').on('submit', function(e) {
+    $(document).on('submit', '#edit-license-form', function(e) {
         e.preventDefault();
 
         const formData = new FormData(this);
@@ -451,7 +464,7 @@ jQuery(document).ready(function($) {
     });
     
     // מחיקת כל הרישיונות לצמיתות
-    $('#delete-all-permanent').on('click', function() {
+    $(document).on('click', '#delete-all-permanent', function() {
         if (!confirm('האם אתה בטוח שברצונך למחוק את כל הרישיונות לצמיתות? פעולה זו בלתי הפיכה!')) {
             return;
         }
@@ -491,13 +504,26 @@ jQuery(document).ready(function($) {
         localStorage.setItem(tabStorageKey, tab);
     }
 
-    const savedTab = localStorage.getItem(tabStorageKey);
-    if (savedTab) {
-        setActiveTab(savedTab);
+    function initializeSettingsTabs() {
+        if (!$('.m365-tab-content').length) {
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const requestedTab = params.get('kbbm_tab');
+        if (requestedTab) {
+            setActiveTab(requestedTab);
+            return;
+        }
+
+        const savedTab = localStorage.getItem(tabStorageKey);
+        if (savedTab) {
+            setActiveTab(savedTab);
+        }
     }
 
     // טאבים בהגדרות
-    $('.m365-tab-btn').on('click', function() {
+    $(document).on('click', '.m365-tab-btn', function() {
         const tab = $(this).data('tab');
         setActiveTab(tab);
     });
@@ -523,7 +549,7 @@ jQuery(document).ready(function($) {
         resultsContainer.show();
     }
 
-    $('#customer-lookup').on('input', function() {
+    $(document).on('input', '#customer-lookup', function() {
         const term = $(this).val().toLowerCase();
 
         if (!term) {
@@ -560,18 +586,19 @@ jQuery(document).ready(function($) {
 
     const tenantFieldSelectors = '#customer-tenant-id, #customer-client-id, #customer-client-secret, #customer-tenant-domain';
 
-    $(document).on('input change', `${tenantFieldSelectors}, .additional-tenant-row input`, function() {
+    $(document).on('input change', `${tenantFieldSelectors}, .additional-tenant-row input, .kbbm-tenant-card input`, function() {
         serializeTenants();
     });
 
     // הוספת לקוח
-    $('#add-customer').on('click', function() {
+    $(document).on('click', '#add-customer', function() {
         $('#customer-modal-title').text('לקוח חדש');
         $('#customer-form')[0].reset();
         $('#customer-id').val('');
         $('#customer-lookup').val('');
         $('#customer-lookup-results').hide();
         $('#customer-paste-source').val('');
+        $('#customer-self-paying').prop('checked', false);
         additionalTenantsContainer.empty();
         $('#customer-tenants-json').val('[]');
 
@@ -597,34 +624,35 @@ jQuery(document).ready(function($) {
                 $('#customer-modal-title').text('עריכת לקוח');
                 $('#customer-id').val(customer.id || '');
                 $('#customer-number').val(customer.customer_number || '');
-        $('#customer-name').val(customer.customer_name || '');
-        $('#customer-tenant-id').val(customer.tenant_id || '');
-        $('#customer-client-id').val(customer.client_id || '');
-        $('#customer-client-secret').val(customer.client_secret || '');
-        $('#customer-tenant-domain').val(customer.tenant_domain || '');
-        $('#customer-api-expiry').val('');
-        $('#customer-paste-source').val('');
-        additionalTenantsContainer.empty();
-        $('#customer-tenants-json').val('[]');
-        if (customer.tenants && customer.tenants.length > 0) {
-            customer.tenants.forEach(function(tenant, index) {
-                if (index === 0) {
-                    $('#customer-tenant-id').val(tenant.tenant_id || customer.tenant_id || '');
-                    $('#customer-client-id').val(tenant.client_id || customer.client_id || '');
-                    $('#customer-client-secret').val(tenant.client_secret || customer.client_secret || '');
-                    $('#customer-tenant-domain').val(tenant.tenant_domain || customer.tenant_domain || '');
-                    $('#customer-api-expiry').val(tenant.api_expiry_date || '');
-                } else {
-                    addAdditionalTenantRow({
-                        tenant_id: tenant.tenant_id,
-                        client_id: tenant.client_id,
-                        client_secret: tenant.client_secret,
-                        tenant_domain: tenant.tenant_domain,
-                        api_expiry_date: tenant.api_expiry_date
+                $('#customer-name').val(customer.customer_name || '');
+                $('#customer-tenant-id').val(customer.tenant_id || '');
+                $('#customer-client-id').val(customer.client_id || '');
+                $('#customer-client-secret').val(customer.client_secret || '');
+                $('#customer-tenant-domain').val(customer.tenant_domain || '');
+                $('#customer-self-paying').prop('checked', Number(customer.is_self_paying) === 1);
+                $('#customer-api-expiry').val('');
+                $('#customer-paste-source').val('');
+                additionalTenantsContainer.empty();
+                $('#customer-tenants-json').val('[]');
+                if (customer.tenants && customer.tenants.length > 0) {
+                    customer.tenants.forEach(function(tenant, index) {
+                        if (index === 0) {
+                            $('#customer-tenant-id').val(tenant.tenant_id || customer.tenant_id || '');
+                            $('#customer-client-id').val(tenant.client_id || customer.client_id || '');
+                            $('#customer-client-secret').val(tenant.client_secret || customer.client_secret || '');
+                            $('#customer-tenant-domain').val(tenant.tenant_domain || customer.tenant_domain || '');
+                            $('#customer-api-expiry').val(tenant.api_expiry_date || '');
+                        } else {
+                            addAdditionalTenantRow({
+                                tenant_id: tenant.tenant_id,
+                                client_id: tenant.client_id,
+                                client_secret: tenant.client_secret,
+                                tenant_domain: tenant.tenant_domain,
+                                api_expiry_date: tenant.api_expiry_date
+                            });
+                        }
                     });
                 }
-            });
-        }
                 serializeTenants();
 
                 const row = $(e.target).closest('tr');
@@ -639,7 +667,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    $('#customer-paste-fill').on('click', function() {
+    $(document).on('click', '#customer-paste-fill', function() {
         const raw = ($('#customer-paste-source').val() || '').trim();
         if (!raw) return;
 
@@ -668,14 +696,14 @@ jQuery(document).ready(function($) {
         addAdditionalTenantRow();
     });
 
-    $('#add-tenant-only').on('click', function() {
+    $(document).on('click', '#add-tenant-only', function() {
         if (tenantOnlyForm.length) {
             tenantOnlyForm.toggle();
             $('html, body').animate({ scrollTop: tenantOnlyForm.offset().top - 60 }, 300);
         }
     });
 
-    tenantOnlyInnerForm.on('submit', function(e) {
+    $(document).on('submit', '#tenant-only-form-inner', function(e) {
         e.preventDefault();
 
         const customerId = $('#tenant-only-customer-select').val();
@@ -799,7 +827,7 @@ jQuery(document).ready(function($) {
     });
 
     // שמירת לקוח
-    $('#customer-form').on('submit', function(e) {
+    $(document).on('submit', '#customer-form', function(e) {
         e.preventDefault();
 
         serializeTenants();
@@ -827,7 +855,7 @@ jQuery(document).ready(function($) {
     });
 
     // יצירת סקריפט API + תצוגה במודאל
-    $('#generate-api-script').on('click', function() {
+    $(document).on('click', '#generate-api-script', function() {
         const customerId = $('#api-customer-select').val();
         const downloadBase = $('#api-customer-select').data('download-base') || '';
         const button = $(this);
@@ -937,7 +965,11 @@ jQuery(document).ready(function($) {
         });
     }
 
-    if ($('#kbbm-alerts-table').length) {
+    function initializeAlertsFilters() {
+        if (!$('#kbbm-alerts-table').length) {
+            return;
+        }
+
         $('#alerts-filter-customer, #alerts-filter-license, #alerts-filter-from, #alerts-filter-to').on('input change', function() {
             applyAlertsFilters();
         });
@@ -966,7 +998,7 @@ jQuery(document).ready(function($) {
         $('#license-type-modal').fadeIn();
     });
 
-    $('#kbbm-license-type-form').on('submit', function(e) {
+    $(document).on('submit', '#kbbm-license-type-form', function(e) {
         e.preventDefault();
 
         const formData = {
@@ -1025,7 +1057,7 @@ jQuery(document).ready(function($) {
         $('#license-type-modal').fadeIn();
     });
 
-    $('#kbbm-license-type-form').on('submit', function(e) {
+    $(document).on('submit', '#kbbm-license-type-form', function(e) {
         e.preventDefault();
 
         const formData = {
@@ -1067,7 +1099,7 @@ jQuery(document).ready(function($) {
     });
 
     // העתקת סקריפט API
-    $('#kbbm-copy-script, #copy-api-script').on('click', function() {
+    $(document).on('click', '#kbbm-copy-script, #copy-api-script', function() {
         const scriptText = $('#kbbm-script-preview').val() || $('#api-script-text').val();
 
         if (navigator.clipboard && scriptText) {
@@ -1086,7 +1118,7 @@ jQuery(document).ready(function($) {
     });
     
     // סגירת Modal
-    $('.m365-modal-close, .m365-modal-cancel').on('click', function() {
+    $(document).on('click', '.m365-modal-close, .m365-modal-cancel', function() {
         if ($(this).closest('#customer-form-wrapper').length) {
             hideCustomerForm();
             return;
@@ -1096,23 +1128,27 @@ jQuery(document).ready(function($) {
     });
     
     // סגירת Modal בלחיצה על הרקע
-    $('.m365-modal, .kbbm-modal-overlay').on('click', function(e) {
+    $(document).on('click', '.m365-modal, .kbbm-modal-overlay', function(e) {
         if ($(e.target).hasClass('m365-modal') || $(e.target).hasClass('kbbm-modal-overlay')) {
             $(this).fadeOut();
         }
     });
 
-    $('#kbbm-log-settings-form').on('submit', function(e) {
+    $(document).on('submit', '#kbbm-log-settings-form', function(e) {
         e.preventDefault();
 
         const days = parseInt($('#kbbm-log-retention-days').val(), 10) || 120;
         const useTestServer = $('#kbbm-use-test-server').is(':checked') ? 1 : 0;
+        const warningDays = parseInt($('#kbbm-api-warning-days').val(), 10);
+        const dangerDays = parseInt($('#kbbm-api-danger-days').val(), 10);
 
         $.post(m365Ajax.ajaxurl, {
             action: 'kbbm_save_settings',
             nonce: m365Ajax.nonce,
             log_retention_days: days,
-            use_test_server: useTestServer
+            use_test_server: useTestServer,
+            api_expiry_warning_days: Number.isFinite(warningDays) ? warningDays : '',
+            api_expiry_danger_days: Number.isFinite(dangerDays) ? dangerDays : ''
         }, function(response) {
             if (response && response.success) {
                 showMessage('success', (response.data && response.data.message) ? response.data.message : 'ההגדרות נשמרו');
@@ -1125,8 +1161,107 @@ jQuery(document).ready(function($) {
         });
     });
 
-    const logTable = $('.kbbm-log-table');
-    if (logTable.length) {
+    $(document).on('submit', '#kbbm-partner-settings-form', function(e) {
+        e.preventDefault();
+
+        const payload = {
+            action: 'kbbm_save_settings',
+            nonce: m365Ajax.nonce,
+            partner_enabled: $('#kbbm-partner-enabled').is(':checked') ? 1 : 0,
+            partner_tenant_id: $('#kbbm-partner-tenant-id').val(),
+            partner_client_id: $('#kbbm-partner-client-id').val(),
+            partner_client_secret: $('#kbbm-partner-client-secret').val(),
+            partner_environment: $('#kbbm-partner-environment').val(),
+            graph_enabled: $('#kbbm-graph-enabled').is(':checked') ? 1 : 0
+        };
+
+        $.post(m365Ajax.ajaxurl, payload, function(response) {
+            if (response && response.success) {
+                showMessage('success', 'הגדרות Partner נשמרו');
+                $('#kbbm-partner-client-secret').val('');
+            } else {
+                const msg = response && response.data && response.data.message ? response.data.message : 'שמירת הגדרות Partner נכשלה';
+                showMessage('error', msg);
+            }
+        }).fail(function() {
+            showMessage('error', 'שמירת הגדרות Partner נכשלה');
+        });
+    });
+
+    $(document).on('click', '#kbbm-partner-test', function() {
+        const button = $(this);
+        button.prop('disabled', true).text('בודק...');
+
+        $.post(m365Ajax.ajaxurl, {
+            action: 'kbbm_partner_test',
+            nonce: m365Ajax.nonce
+        }, function(response) {
+            if (response && response.success) {
+                showMessage('success', response.data && response.data.message ? response.data.message : 'חיבור Partner תקין');
+            } else {
+                const msg = response && response.data && response.data.message ? response.data.message : 'חיבור Partner נכשל';
+                showMessage('error', msg);
+            }
+        }).always(function() {
+            button.prop('disabled', false).text('Test Partner Connection');
+        });
+    });
+
+    $(document).on('click', '#kbbm-partner-authorize', function() {
+        const url = $(this).data('url');
+        if (url) {
+            window.location.href = url;
+        }
+    });
+
+    $(document).on('click', '#kbbm-partner-sync-customers', function() {
+        const button = $(this);
+        button.prop('disabled', true).text('מסנכרן...');
+
+        $.post(m365Ajax.ajaxurl, {
+            action: 'kbbm_partner_sync_customers',
+            nonce: m365Ajax.nonce
+        }, function(response) {
+            if (response && response.success) {
+                const count = response.data && typeof response.data.count !== 'undefined' ? response.data.count : 0;
+                showMessage('success', `סנכרון לקוחות הושלם (${count})`);
+            } else {
+                const msg = response && response.data && response.data.message ? response.data.message : 'סנכרון לקוחות נכשל';
+                showMessage('error', msg);
+            }
+        }).always(function() {
+            button.prop('disabled', false).text('Sync Customers');
+        });
+    });
+
+    $(document).on('click', '#kbbm-partner-sync-licenses', function() {
+        const button = $(this);
+        button.prop('disabled', true).text('מסנכרן...');
+
+        $.post(m365Ajax.ajaxurl, {
+            action: 'kbbm_partner_sync_licenses',
+            nonce: m365Ajax.nonce
+        }, function(response) {
+            if (response && response.success) {
+                const count = response.data && typeof response.data.count !== 'undefined' ? response.data.count : 0;
+                showMessage('success', `סנכרון רישיונות הושלם (${count})`);
+            } else {
+                const msg = response && response.data && response.data.message ? response.data.message : 'סנכרון רישיונות נכשל';
+                showMessage('error', msg);
+            }
+        }).always(function() {
+            button.prop('disabled', false).text('Sync Licenses');
+        });
+    });
+
+    function initializeLogTable(context) {
+        const logTable = (context || $(document)).find('.kbbm-log-table').first();
+        if (!logTable.length || logTable.data('kbbmInitialized')) {
+            return;
+        }
+
+        logTable.data('kbbmInitialized', true);
+
         const logHeaders = logTable.find('th.sortable');
         const logSearch = $('#kbbm-log-search-input');
         const logFilters = $('.kbbm-log-filter');
@@ -1286,6 +1421,61 @@ jQuery(document).ready(function($) {
                 return 'לא נבדק';
         }
     }
+
+    function initializePageFeatures(context) {
+        initializeSettingsTabs();
+        initializeAlertsFilters();
+        initializeLogTable(context);
+    }
+
+    function loadNavigation(url, options = {}) {
+        const container = $('.m365-lm-container').first();
+        if (!container.length) {
+            window.location.href = url;
+            return;
+        }
+
+        container.addClass('kbbm-loading');
+
+        fetch(url, { credentials: 'same-origin' })
+            .then(response => response.text())
+            .then(html => {
+                const doc = $('<div>').append($.parseHTML(html));
+                const newContainer = doc.find('.m365-lm-container').first();
+                if (!newContainer.length) {
+                    window.location.href = url;
+                    return;
+                }
+
+                container.replaceWith(newContainer);
+                if (options.pushState !== false) {
+                    history.pushState({ kbbmUrl: url }, '', url);
+                }
+
+                initializePageFeatures(newContainer);
+            })
+            .catch(() => {
+                window.location.href = url;
+            });
+    }
+
+    $(document).on('click', '.m365-nav-links a', function(event) {
+        const url = $(this).attr('href');
+        if (!url || url === window.location.href) {
+            return;
+        }
+
+        event.preventDefault();
+        loadNavigation(url, { pushState: true });
+    });
+
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.kbbmUrl) {
+            loadNavigation(event.state.kbbmUrl, { pushState: false });
+        }
+    });
+
+    initializePageFeatures();
     
 });
 
@@ -1310,23 +1500,9 @@ jQuery(document).ready(function($) {
   }
 
   function serializeTenants(){
-    var hid = document.getElementById('customer-tenants-json');
-    if (!hid) return;
-    var cards = qa('#additional-tenants .kbbm-tenant-card');
-    var tenants = [];
-    for (var i=0;i<cards.length;i++){
-      var c = cards[i];
-      var t = {
-        tenant_id: (q('.kbbm-tenant-id', c) || {}).value || '',
-        tenant_domain: (q('.kbbm-tenant-domain', c) || {}).value || '',
-        client_id: (q('.kbbm-tenant-client-id', c) || {}).value || '',
-        client_secret: (q('.kbbm-tenant-client-secret', c) || {}).value || ''
-      };
-      var hasAny = false;
-      for (var k in t){ if (t.hasOwnProperty(k) && String(t[k]).trim() !== '') { hasAny=true; break; } }
-      if (hasAny) tenants.push(t);
+    if (typeof window.kbbmSerializeTenants === 'function') {
+      window.kbbmSerializeTenants();
     }
-    hid.value = JSON.stringify(tenants);
   }
 
   function makeField(label, cls, placeholder, type){
