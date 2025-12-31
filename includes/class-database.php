@@ -17,6 +17,11 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            partner_customer_id varchar(255) DEFAULT NULL,
+            source varchar(50) DEFAULT 'manual',
+            default_tenant_id varchar(255) DEFAULT NULL,
+            default_tenant_domain varchar(255) DEFAULT NULL,
+            is_self_paying tinyint(1) DEFAULT 0,
             last_connection_status varchar(20) DEFAULT 'unknown',
             last_connection_message text DEFAULT NULL,
             last_connection_time datetime DEFAULT NULL,
@@ -36,6 +41,11 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            partner_customer_id varchar(255) DEFAULT NULL,
+            source varchar(50) DEFAULT 'manual',
+            default_tenant_id varchar(255) DEFAULT NULL,
+            default_tenant_domain varchar(255) DEFAULT NULL,
+            is_self_paying tinyint(1) DEFAULT 0,
             last_connection_status varchar(20) DEFAULT 'unknown',
             last_connection_message text DEFAULT NULL,
             last_connection_time datetime DEFAULT NULL,
@@ -55,6 +65,7 @@ class M365_LM_Database {
             client_id varchar(255) DEFAULT NULL,
             client_secret text DEFAULT NULL,
             api_expiry_date date DEFAULT NULL,
+            partner_customer_id varchar(255) DEFAULT NULL,
             is_primary tinyint(1) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -92,6 +103,10 @@ class M365_LM_Database {
             consumed_units int(11) NOT NULL DEFAULT 0,
             status_text varchar(100) DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            partner_customer_id varchar(255) DEFAULT NULL,
+            subscription_id varchar(255) DEFAULT NULL,
+            offer_id varchar(255) DEFAULT NULL,
+            service_plans longtext DEFAULT NULL,
             cost_price decimal(10,2) NOT NULL DEFAULT 0,
             selling_price decimal(10,2) NOT NULL DEFAULT 0,
             quantity int(11) NOT NULL DEFAULT 0,
@@ -123,6 +138,10 @@ class M365_LM_Database {
             consumed_units INT(11) DEFAULT 0,
             status_text varchar(100) DEFAULT NULL,
             tenant_domain varchar(255) DEFAULT NULL,
+            partner_customer_id varchar(255) DEFAULT NULL,
+            subscription_id varchar(255) DEFAULT NULL,
+            offer_id varchar(255) DEFAULT NULL,
+            service_plans longtext DEFAULT NULL,
             billing_cycle ENUM('monthly','yearly') DEFAULT 'monthly',
             billing_frequency INT(11) DEFAULT 1,
             renewal_date DATE DEFAULT NULL,
@@ -170,6 +189,25 @@ class M365_LM_Database {
         self::maybe_add_column($types_table, 'display_name', "display_name VARCHAR(255) DEFAULT '' AFTER name");
         self::maybe_add_column($types_table, 'show_in_main', "show_in_main TINYINT(1) DEFAULT 1 AFTER default_billing_frequency");
         self::maybe_add_column($kb_customer_tenants, 'api_expiry_date', "api_expiry_date DATE DEFAULT NULL AFTER client_secret");
+        self::maybe_add_column($table_customers, 'is_self_paying', "is_self_paying TINYINT(1) DEFAULT 0 AFTER tenant_domain");
+        self::maybe_add_column($kb_customers_table, 'is_self_paying', "is_self_paying TINYINT(1) DEFAULT 0 AFTER tenant_domain");
+        self::maybe_add_column($table_customers, 'partner_customer_id', "partner_customer_id VARCHAR(255) DEFAULT NULL AFTER tenant_domain");
+        self::maybe_add_column($kb_customers_table, 'partner_customer_id', "partner_customer_id VARCHAR(255) DEFAULT NULL AFTER tenant_domain");
+        self::maybe_add_column($table_customers, 'source', "source VARCHAR(50) DEFAULT 'manual' AFTER partner_customer_id");
+        self::maybe_add_column($kb_customers_table, 'source', "source VARCHAR(50) DEFAULT 'manual' AFTER partner_customer_id");
+        self::maybe_add_column($table_customers, 'default_tenant_id', "default_tenant_id VARCHAR(255) DEFAULT NULL AFTER source");
+        self::maybe_add_column($kb_customers_table, 'default_tenant_id', "default_tenant_id VARCHAR(255) DEFAULT NULL AFTER source");
+        self::maybe_add_column($table_customers, 'default_tenant_domain', "default_tenant_domain VARCHAR(255) DEFAULT NULL AFTER default_tenant_id");
+        self::maybe_add_column($kb_customers_table, 'default_tenant_domain', "default_tenant_domain VARCHAR(255) DEFAULT NULL AFTER default_tenant_id");
+        self::maybe_add_column($kb_customer_tenants, 'partner_customer_id', "partner_customer_id VARCHAR(255) DEFAULT NULL AFTER api_expiry_date");
+        self::maybe_add_column($table_licenses, 'partner_customer_id', "partner_customer_id VARCHAR(255) DEFAULT NULL AFTER tenant_domain");
+        self::maybe_add_column($table_licenses, 'subscription_id', "subscription_id VARCHAR(255) DEFAULT NULL AFTER partner_customer_id");
+        self::maybe_add_column($table_licenses, 'offer_id', "offer_id VARCHAR(255) DEFAULT NULL AFTER subscription_id");
+        self::maybe_add_column($table_licenses, 'service_plans', "service_plans LONGTEXT NULL AFTER offer_id");
+        self::maybe_add_column($kb_licenses_table, 'partner_customer_id', "partner_customer_id VARCHAR(255) DEFAULT NULL AFTER tenant_domain");
+        self::maybe_add_column($kb_licenses_table, 'subscription_id', "subscription_id VARCHAR(255) DEFAULT NULL AFTER partner_customer_id");
+        self::maybe_add_column($kb_licenses_table, 'offer_id', "offer_id VARCHAR(255) DEFAULT NULL AFTER subscription_id");
+        self::maybe_add_column($kb_licenses_table, 'service_plans', "service_plans LONGTEXT NULL AFTER offer_id");
     }
     
     // פונקציות CRUD ללקוחות
@@ -185,6 +223,24 @@ class M365_LM_Database {
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id));
     }
 
+    public static function get_customer_by_partner_id($partner_customer_id) {
+        global $wpdb;
+        $table = self::get_customers_table_name();
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE partner_customer_id = %s",
+            $partner_customer_id
+        ));
+    }
+
+    public static function get_customers_by_source($source) {
+        global $wpdb;
+        $table = self::get_customers_table_name();
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE source = %s ORDER BY customer_name ASC",
+            $source
+        ));
+    }
+
     public static function save_customer($data) {
         global $wpdb;
         $table = self::get_customers_table_name();
@@ -196,6 +252,28 @@ class M365_LM_Database {
             $wpdb->insert($table, $data);
             return $wpdb->insert_id;
         }
+    }
+
+    public static function upsert_partner_customer($data) {
+        $partner_id = sanitize_text_field($data['partner_customer_id'] ?? '');
+        if ($partner_id === '') {
+            return null;
+        }
+
+        $existing = self::get_customer_by_partner_id($partner_id);
+
+        $payload = array(
+            'partner_customer_id' => $partner_id,
+            'customer_name' => sanitize_text_field($data['customer_name'] ?? ''),
+            'tenant_domain' => sanitize_text_field($data['tenant_domain'] ?? ''),
+            'source' => 'partner',
+        );
+
+        if ($existing && !empty($existing->id)) {
+            $payload['id'] = intval($existing->id);
+        }
+
+        return self::save_customer($payload);
     }
 
     public static function replace_customer_tenants($customer_id, $tenants) {
@@ -234,6 +312,28 @@ class M365_LM_Database {
         ));
     }
 
+    /**
+     * מחזיר מפה של customer_id => api_expiry_date עבור טננט ראשי.
+     */
+    public static function get_primary_tenant_expiries() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'kb_billing_customer_tenants';
+
+        $rows = $wpdb->get_results(
+            "SELECT customer_id, api_expiry_date FROM {$table} WHERE is_primary = 1",
+            OBJECT
+        );
+
+        $map = array();
+        if (!empty($rows)) {
+            foreach ($rows as $row) {
+                $map[intval($row->customer_id)] = $row->api_expiry_date;
+            }
+        }
+
+        return $map;
+    }
+
     public static function get_tenant_by_id($tenant_row_id) {
         global $wpdb;
         $table = $wpdb->prefix . 'kb_billing_customer_tenants';
@@ -252,7 +352,7 @@ class M365_LM_Database {
         $where = $include_deleted ? "" : "WHERE l.is_deleted = 0";
         
         return $wpdb->get_results("
-            SELECT l.*, c.customer_number, c.customer_name, c.tenant_domain
+            SELECT l.*, c.customer_number, c.customer_name, c.tenant_domain, COALESCE(c.is_self_paying, 0) AS is_self_paying
             FROM $table_licenses l
             LEFT JOIN $table_customers c ON l.customer_id = c.id
             $where
@@ -315,6 +415,43 @@ class M365_LM_Database {
         }
 
         return self::save_license($data);
+    }
+
+    public static function upsert_partner_subscription($data) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'm365_licenses';
+
+        $subscription_id = sanitize_text_field($data['subscription_id'] ?? '');
+        $customer_id = intval($data['customer_id'] ?? 0);
+
+        if ($subscription_id === '' || $customer_id === 0) {
+            return null;
+        }
+
+        $existing_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$table} WHERE subscription_id = %s AND customer_id = %d",
+            $subscription_id,
+            $customer_id
+        ));
+
+        $payload = array(
+            'customer_id' => $customer_id,
+            'partner_customer_id' => sanitize_text_field($data['partner_customer_id'] ?? ''),
+            'subscription_id' => $subscription_id,
+            'offer_id' => sanitize_text_field($data['offer_id'] ?? ''),
+            'plan_name' => sanitize_text_field($data['plan_name'] ?? ''),
+            'quantity' => intval($data['quantity'] ?? 0),
+            'enabled_units' => intval($data['enabled_units'] ?? 0),
+            'consumed_units' => intval($data['consumed_units'] ?? 0),
+            'status_text' => sanitize_text_field($data['status_text'] ?? ''),
+            'tenant_domain' => sanitize_text_field($data['tenant_domain'] ?? ''),
+        );
+
+        if (!empty($existing_id)) {
+            $payload['id'] = intval($existing_id);
+        }
+
+        return self::save_license($payload);
     }
     
     public static function soft_delete_license($id) {
@@ -676,6 +813,19 @@ class M365_LM_Database {
                 "DELETE FROM {$table} WHERE event_time < DATE_SUB(NOW(), INTERVAL %d DAY)",
                 $days
             )
+        );
+    }
+
+    public static function get_api_expiry_thresholds() {
+        $warning_days = intval(get_option('kbbm_expiry_warning_days', 60));
+        $danger_days  = intval(get_option('kbbm_expiry_danger_days', 30));
+
+        $warning_days = $warning_days >= 0 ? $warning_days : 60;
+        $danger_days  = $danger_days >= 0 ? $danger_days : 30;
+
+        return array(
+            'warning' => $warning_days,
+            'danger'  => $danger_days,
         );
     }
 

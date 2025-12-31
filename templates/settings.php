@@ -10,7 +10,39 @@
         $license_types  = isset($license_types) ? $license_types : array();
         $log_retention_days = isset($log_retention_days) ? intval($log_retention_days) : 120;
         $use_test_server = (int) get_option('kbbm_use_test_server', 0);
-        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.18.55';
+        $api_expiry_warning_days = intval(get_option('kbbm_expiry_warning_days', 60));
+        $api_expiry_danger_days  = intval(get_option('kbbm_expiry_danger_days', 30));
+        $display_version = defined('M365_LM_DISPLAY_VERSION') ? M365_LM_DISPLAY_VERSION : '17.21.00';
+        $partner_refresh_token = get_option('kbbm_partner_refresh_token', '');
+        $partner_auth_status = isset($_GET['partner_auth']) ? sanitize_text_field(wp_unslash($_GET['partner_auth'])) : '';
+        $partner_authorize_url = wp_nonce_url(admin_url('admin-post.php?action=kbbm_partner_authorize'), 'kbbm_partner_authorize');
+
+        if (!function_exists('kbbm_format_api_expiry')) {
+            function kbbm_format_api_expiry($date_value) {
+                if (empty($date_value) || $date_value === '0000-00-00') {
+                    return '';
+                }
+
+                $timestamp = strtotime($date_value);
+                if ($timestamp === false) {
+                    return esc_html($date_value);
+                }
+
+                $now    = current_time('timestamp');
+                $days   = (int) floor(($timestamp - $now) / DAY_IN_SECONDS);
+                $suffix = '';
+
+                if ($days > 0) {
+                    $suffix = sprintf(__(' (עוד %s ימים)', 'm365-license-manager'), $days);
+                } elseif ($days === 0) {
+                    $suffix = __(' (פג היום)', 'm365-license-manager');
+                } else {
+                    $suffix = sprintf(__(' (פג לפני %s ימים)', 'm365-license-manager'), abs($days));
+                }
+
+                return esc_html($date_value . $suffix);
+            }
+        }
     ?>
     <div class="m365-nav-links">
         <a href="<?php echo esc_url($main_url); ?>" class="<?php echo $active === 'main' ? 'active' : ''; ?>">ראשי</a>
@@ -28,6 +60,7 @@
     <div class="m365-settings-tabs">
         <button class="m365-tab-btn active" data-tab="customers">ניהול לקוחות</button>
         <button class="m365-tab-btn" data-tab="api-setup">הגדרת API</button>
+        <button class="m365-tab-btn" data-tab="partner">API / Partner</button>
         <button class="m365-tab-btn" data-tab="license-types">סוגי רישיונות</button>
         <button class="m365-tab-btn" data-tab="log-settings">הגדרות לוגים</button>
     </div>
@@ -85,6 +118,11 @@
                     <div class="form-group kbbm-inline-field">
                         <label for="customer-tenant-domain">Tenant Domain:</label>
                         <input type="text" id="customer-tenant-domain" name="tenant_domain" placeholder="example.onmicrosoft.com">
+                    </div>
+
+                    <div class="form-group kbbm-inline-field">
+                        <label for="customer-self-paying">לקוח משלם בעצמו:</label>
+                        <input type="checkbox" id="customer-self-paying" name="is_self_paying" value="1">
                     </div>
 
                     <div class="form-group kbbm-inline-field">
@@ -166,6 +204,8 @@
                         <th>Tenant ID</th>
                         <th>Client ID</th>
                         <th>תוקף API</th>
+                        <th>ימים עד תפוגה</th>
+                        <th>לקוח משלם</th>
                         <th>סטטוס</th>
                         <th>פעולות</th>
                     </tr>
@@ -173,7 +213,7 @@
                 <tbody>
                     <?php if (empty($customers)): ?>
                         <tr>
-                            <td colspan="6" class="no-data">אין לקוחות רשומים</td>
+                            <td colspan="9" class="no-data">אין לקוחות רשומים</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($customers as $customer): ?>
@@ -203,6 +243,8 @@
                                 <td><?php echo esc_html(substr($tenant_id, 0, 20)) . (strlen($tenant_id) > 20 ? '...' : ''); ?></td>
                                 <td><?php echo esc_html(substr($client_id, 0, 20)) . (strlen($client_id) > 20 ? '...' : ''); ?></td>
                                 <td><?php echo esc_html($primary_tenant && !empty($primary_tenant->api_expiry_date) ? $primary_tenant->api_expiry_date : ''); ?></td>
+                                <td><?php echo $primary_tenant && !empty($primary_tenant->api_expiry_date) ? kbbm_format_api_expiry($primary_tenant->api_expiry_date) : ''; ?></td>
+                                <td><?php echo intval($customer->is_self_paying ?? 0) === 1 ? 'כן' : 'לא'; ?></td>
                                 <td>
                                     <span id="connection-status-<?php echo esc_attr($customer->id); ?>" class="connection-status <?php echo esc_attr($status_class); ?>" title="<?php echo esc_attr($status_msg); ?>">
                                         <?php echo esc_html($status_label); ?>
@@ -231,6 +273,8 @@
                                         <td><?php echo esc_html(substr($tenant->tenant_id, 0, 20)) . (strlen($tenant->tenant_id) > 20 ? '...' : ''); ?></td>
                                         <td><?php echo esc_html(substr($tenant->client_id, 0, 20)) . (strlen($tenant->client_id) > 20 ? '...' : ''); ?></td>
                                         <td><?php echo esc_html($tenant->api_expiry_date ?? ''); ?></td>
+                                        <td><?php echo !empty($tenant->api_expiry_date) ? kbbm_format_api_expiry($tenant->api_expiry_date) : ''; ?></td>
+                                        <td><?php echo intval($customer->is_self_paying ?? 0) === 1 ? 'כן' : 'לא'; ?></td>
                                         <td>
                                             <span id="tenant-status-<?php echo esc_attr($tenant->id); ?>" class="connection-status status-unknown">לא נבדק</span>
                                         </td>
@@ -292,6 +336,85 @@
         </div>
     </div>
 
+    <!-- טאב API / Partner -->
+    <div class="m365-tab-content" id="partner-tab">
+        <div class="m365-section">
+            <h3>Partner Mode</h3>
+            <?php if ($partner_auth_status): ?>
+                <div class="m365-message <?php echo $partner_auth_status === 'success' ? 'success' : 'error'; ?>" style="display:block;">
+                    <?php if ($partner_auth_status === 'success'): ?>
+                        הסמכת Partner נשמרה בהצלחה.
+                    <?php elseif ($partner_auth_status === 'missing_credentials'): ?>
+                        חסרים פרטי Partner (Tenant ID / Client ID / Secret).
+                    <?php elseif ($partner_auth_status === 'invalid_state'): ?>
+                        אימות Partner נכשל (state לא תקין).
+                    <?php else: ?>
+                        אימות Partner נכשל. בדוק לוגים.
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+            <form id="kbbm-partner-settings-form">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="kbbm-partner-enabled" name="partner_enabled" <?php checked(get_option('kbbm_partner_enabled', 0), 1); ?> />
+                        הפעל Partner Mode
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Partner Tenant ID</label>
+                    <input type="text" id="kbbm-partner-tenant-id" name="partner_tenant_id" value="<?php echo esc_attr(get_option('kbbm_partner_tenant_id', '')); ?>">
+                </div>
+
+                <div class="form-group">
+                    <label>Partner Client ID</label>
+                    <input type="text" id="kbbm-partner-client-id" name="partner_client_id" value="<?php echo esc_attr(get_option('kbbm_partner_client_id', '')); ?>">
+                </div>
+
+                <div class="form-group">
+                    <label>Partner Client Secret</label>
+                    <input type="password" id="kbbm-partner-client-secret" name="partner_client_secret" placeholder="••••••••">
+                    <small>השאר ריק כדי לשמור על הסוד הקיים.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Partner Environment</label>
+                    <select id="kbbm-partner-environment" name="partner_environment">
+                        <option value="production" <?php selected(get_option('kbbm_partner_environment', 'production'), 'production'); ?>>production</option>
+                        <option value="sandbox" <?php selected(get_option('kbbm_partner_environment', 'production'), 'sandbox'); ?>>sandbox</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="kbbm-graph-enabled" name="graph_enabled" <?php checked(get_option('kbbm_graph_enabled', 0), 1); ?> />
+                        הפעל Graph Enrichment (כבוי בשלב 1)
+                    </label>
+                    <small>Stage 2 משתמש באותם פרטי חיבור כברירת מחדל.</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="m365-btn m365-btn-primary">שמור הגדרות</button>
+                    <button type="button" id="kbbm-partner-authorize" class="m365-btn m365-btn-secondary" data-url="<?php echo esc_url($partner_authorize_url); ?>">
+                        Authorize Partner
+                    </button>
+                    <button type="button" id="kbbm-partner-test" class="m365-btn m365-btn-secondary">Test Partner Connection</button>
+                    <button type="button" id="kbbm-partner-sync-customers" class="m365-btn m365-btn-secondary">Sync Customers</button>
+                    <button type="button" id="kbbm-partner-sync-licenses" class="m365-btn m365-btn-secondary">Sync Licenses</button>
+                </div>
+                <div class="form-group">
+                    <small>
+                        <?php if (!empty($partner_refresh_token)): ?>
+                            מצב אימות: פעיל (נשמר refresh token).
+                        <?php else: ?>
+                            מצב אימות: לא בוצע (נדרש user_impersonation + offline_access).
+                        <?php endif; ?>
+                    </small>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- טאב סוגי רישיונות -->
     <div class="m365-tab-content" id="license-types-tab">
         <div class="m365-section">
@@ -301,7 +424,6 @@
                 <table class="m365-table kbbm-license-types-table">
                     <thead>
                         <tr>
-                            <th>SKU</th>
                             <th>שם רישיון (API)</th>
                             <th>שם לתצוגה</th>
                             <th class="col-cost">מחיר רכישה</th>
@@ -325,7 +447,6 @@
                                     data-billing-frequency="<?php echo esc_attr($type->billing_frequency ?? 1); ?>"
                                     data-show-in-main="<?php echo isset($type->show_in_main) ? esc_attr($type->show_in_main) : 1; ?>"
                                 >
-                                    <td><?php echo esc_html($type->sku); ?></td>
                                     <td><?php echo esc_html($type->name); ?></td>
                                     <td><?php echo esc_html($type->display_name ?? $type->name); ?></td>
                                     <td class="col-cost"><?php echo esc_html($type->cost_price); ?></td>
@@ -338,7 +459,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="9" class="no-data">אין סוגי רישיונות מוגדרים</td>
+                                <td colspan="8" class="no-data">אין סוגי רישיונות מוגדרים</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -361,6 +482,16 @@
                     <label>מספר ימים לשמירת לוגים לפני מחיקה:</label>
                     <input type="number" id="kbbm-log-retention-days" name="log_retention_days" min="1" value="<?php echo esc_attr($log_retention_days); ?>" placeholder="120">
                     <small>ברירת המחדל: 120 ימים.</small>
+                </div>
+                <div class="form-group">
+                    <label>ימים להתראה צהובה על תוקף API:</label>
+                    <input type="number" id="kbbm-api-warning-days" name="api_expiry_warning_days" min="0" value="<?php echo esc_attr($api_expiry_warning_days); ?>" placeholder="60">
+                    <small>ברירת המחדל: 60 ימים.</small>
+                </div>
+                <div class="form-group">
+                    <label>ימים להתראה אדומה על תוקף API:</label>
+                    <input type="number" id="kbbm-api-danger-days" name="api_expiry_danger_days" min="0" value="<?php echo esc_attr($api_expiry_danger_days); ?>" placeholder="30">
+                    <small>ברירת המחדל: 30 ימים.</small>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="m365-btn m365-btn-primary">שמור הגדרות</button>

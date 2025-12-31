@@ -1,0 +1,18 @@
+.kb-table thead th {
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.4;
+    height: auto;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.kb-customer-row td {
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.kb-table td {
+    padding: 6px 8px;
+}
