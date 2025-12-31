@@ -476,9 +476,13 @@ class M365_LM_Admin {
         if (!empty($result['body'])) {
             $body_snippet = substr(wp_json_encode($result['body']), 0, 500);
         }
+        $body_raw = $result['body_raw'] ?? null;
+        $headers = $result['headers'] ?? null;
         $data = array_merge($extra, array(
             'http_code' => $result['code'] ?? null,
             'body_snippet' => $body_snippet,
+            'body_raw' => $body_raw,
+            'response_headers' => $headers,
         ));
         $message = $result['message'] ?? ($result['success'] ? 'OK' : 'Failed');
         M365_LM_Database::log_event('info', $context, $message, null, $data);

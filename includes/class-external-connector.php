@@ -44,7 +44,11 @@ class PartnerCenterConnector implements IExternalDataConnector {
         $cache_key = 'kbbm_partner_access_token';
         $cached = get_transient($cache_key);
         if (!empty($cached)) {
-            return array('success' => true, 'token' => $cached);
+            return array(
+                'success' => true,
+                'token' => $cached,
+                'token_source' => 'cache',
+            );
         }
 
         $url = "https://login.microsoftonline.com/{$this->tenant_id}/oauth2/v2.0/token";
@@ -72,6 +76,7 @@ class PartnerCenterConnector implements IExternalDataConnector {
                 'is_v2'     => strpos($url, '/oauth2/v2.0/') !== false,
                 'scope'     => $body['scope'],
                 'grant_type' => $body['grant_type'],
+                'token_source' => $use_refresh ? 'delegated_refresh_token' : 'client_credentials',
             )
         );
 
@@ -101,13 +106,20 @@ class PartnerCenterConnector implements IExternalDataConnector {
                     'tid'   => $token_payload['tid'] ?? null,
                     'appid' => $token_payload['appid'] ?? null,
                     'roles' => $token_payload['roles'] ?? null,
+                    'scp'   => $token_payload['scp'] ?? null,
+                    'upn'   => $token_payload['upn'] ?? null,
                 )
             );
             if (!empty($payload['refresh_token'])) {
                 update_option('kbbm_partner_refresh_token', $payload['refresh_token']);
                 $this->refresh_token = $payload['refresh_token'];
             }
-            return array('success' => true, 'token' => $payload['access_token']);
+            return array(
+                'success' => true,
+                'token' => $payload['access_token'],
+                'token_source' => $use_refresh ? 'delegated_refresh_token' : 'client_credentials',
+                'grant_type' => $body['grant_type'],
+            );
         }
 
         $message = $payload['error_description'] ?? ($payload['error'] ?? 'Partner auth failed');
@@ -124,6 +136,17 @@ class PartnerCenterConnector implements IExternalDataConnector {
         if (empty($token['success'])) {
             return $token;
         }
+
+        M365_LM_Database::log_event(
+            'info',
+            'partner_fetch_customers',
+            'Partner customers token source',
+            null,
+            array(
+                'token_source' => $token['token_source'] ?? null,
+                'grant_type' => $token['grant_type'] ?? null,
+            )
+        );
 
         $url = 'https://api.partnercenter.microsoft.com/v1/customers';
         $headers = array(
@@ -143,6 +166,7 @@ class PartnerCenterConnector implements IExternalDataConnector {
         $code = wp_remote_retrieve_response_code($response);
         $body_raw = wp_remote_retrieve_body($response);
         $payload = json_decode($body_raw, true);
+        $response_headers = wp_remote_retrieve_headers($response);
 
         $headers_for_log = $headers;
         if (!empty($headers_for_log['Authorization'])) {
@@ -156,12 +180,19 @@ class PartnerCenterConnector implements IExternalDataConnector {
             array(
                 'status' => $code,
                 'headers' => $headers_for_log,
+                'response_headers' => $response_headers,
                 'body' => $body_raw,
             )
         );
 
         if ($code === 200 && isset($payload['items'])) {
-            return array('success' => true, 'customers' => $payload['items'], 'code' => $code);
+            return array(
+                'success' => true,
+                'customers' => $payload['items'],
+                'code' => $code,
+                'body_raw' => $body_raw,
+                'headers' => $response_headers,
+            );
         }
 
         return array(
@@ -169,6 +200,8 @@ class PartnerCenterConnector implements IExternalDataConnector {
             'message' => 'Partner customers fetch failed',
             'code' => $code,
             'body' => $payload,
+            'body_raw' => $body_raw,
+            'headers' => $response_headers,
         );
     }
 

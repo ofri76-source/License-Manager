@@ -29,6 +29,8 @@ class M365_LM_Sync_Service {
                 array(
                     'http_code' => $result['code'] ?? null,
                     'body_snippet' => isset($result['body']) ? substr(wp_json_encode($result['body']), 0, 500) : null,
+                    'body_raw' => $result['body_raw'] ?? null,
+                    'response_headers' => $result['headers'] ?? null,
                 )
             );
             return $result + array('http' => $result);
