@@ -284,6 +284,13 @@
     display: none;
 }
 
+.kbbm-report-table .plans-header-row th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background-color: #cfe8ff;
+}
+
 .kbbm-report-table .plans-header-row.visible {
     display: table-row;
 }
