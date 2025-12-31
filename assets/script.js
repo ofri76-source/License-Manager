@@ -8,6 +8,16 @@ jQuery(document).ready(function($) {
     const tenantOnlyForm = $('#tenant-only-form');
     const tenantOnlyInnerForm = $('#tenant-only-form-inner');
 
+    function maskKeep3(value) {
+        if (!value) {
+            return '';
+        }
+        if (value.length <= 6) {
+            return value;
+        }
+        return value.slice(0, 3) + '***' + value.slice(-3);
+    }
+
     function ensureTenantControls() {
         if (!customerForm.length) {
             return;
@@ -489,6 +499,8 @@ jQuery(document).ready(function($) {
     });
     
     const tabStorageKey = 'kbbmSettingsActiveTab';
+    const $partnerTenant = $('#kbbm-partner-tenant-id');
+    const $partnerClient = $('#kbbm-partner-client-id');
 
     function setActiveTab(tab) {
         if (!tab || !$(`#${tab}-tab`).length) {
@@ -521,6 +533,25 @@ jQuery(document).ready(function($) {
             setActiveTab(savedTab);
         }
     }
+
+    if ($partnerTenant.length) {
+        const real = $partnerTenant.val();
+        $partnerTenant.data('real', real);
+        $partnerTenant.val(maskKeep3(real));
+    }
+    if ($partnerClient.length) {
+        const real = $partnerClient.val();
+        $partnerClient.data('real', real);
+        $partnerClient.val(maskKeep3(real));
+    }
+
+    $partnerTenant.add($partnerClient).on('focus', function() {
+        $(this).val($(this).data('real') || '');
+    }).on('blur', function() {
+        const real = $(this).val();
+        $(this).data('real', real);
+        $(this).val(maskKeep3(real));
+    });
 
     // טאבים בהגדרות
     $(document).on('click', '.m365-tab-btn', function() {
@@ -1163,13 +1194,15 @@ jQuery(document).ready(function($) {
 
     $(document).on('submit', '#kbbm-partner-settings-form', function(e) {
         e.preventDefault();
+        const tenantId = $partnerTenant.data('real') || $partnerTenant.val();
+        const clientId = $partnerClient.data('real') || $partnerClient.val();
 
         const payload = {
             action: 'kbbm_save_settings',
             nonce: m365Ajax.nonce,
             partner_enabled: $('#kbbm-partner-enabled').is(':checked') ? 1 : 0,
-            partner_tenant_id: $('#kbbm-partner-tenant-id').val(),
-            partner_client_id: $('#kbbm-partner-client-id').val(),
+            partner_tenant_id: tenantId,
+            partner_client_id: clientId,
             partner_client_secret: $('#kbbm-partner-client-secret').val(),
             partner_environment: $('#kbbm-partner-environment').val(),
             graph_enabled: $('#kbbm-graph-enabled').is(':checked') ? 1 : 0
@@ -1209,9 +1242,11 @@ jQuery(document).ready(function($) {
 
     $(document).on('click', '#kbbm-partner-authorize', function() {
         const url = $(this).data('url');
-        if (url) {
-            window.location.href = url;
+        if (!url) {
+            alert('Missing authorize URL');
+            return;
         }
+        window.location.href = url;
     });
 
     $(document).on('click', '#kbbm-partner-sync-customers', function() {
