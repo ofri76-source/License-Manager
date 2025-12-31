@@ -13,6 +13,24 @@ class PartnerCenterConnector implements IExternalDataConnector {
     private $client_secret;
     private $environment;
 
+    private function decodeJwtPayload($jwt) {
+        $parts = explode('.', $jwt);
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        $payload = strtr($parts[1], '-_', '+/');
+        $pad = strlen($payload) % 4;
+        if ($pad) {
+            $payload .= str_repeat('=', 4 - $pad);
+        }
+        $json = base64_decode($payload);
+        if ($json === false) {
+            return null;
+        }
+        return json_decode($json, true);
+    }
+
     public function __construct($tenant_id, $client_id, $client_secret, $environment = 'production') {
         $this->tenant_id = $tenant_id;
         $this->client_id = $client_id;
@@ -35,6 +53,18 @@ class PartnerCenterConnector implements IExternalDataConnector {
             'scope' => 'https://api.partnercenter.microsoft.com/.default',
         );
 
+        M365_LM_Database::log_event(
+            'info',
+            'partner_auth_debug',
+            'Partner token request details',
+            null,
+            array(
+                'token_url' => $url,
+                'is_v2'     => strpos($url, '/oauth2/v2.0/') !== false,
+                'scope'     => $body['scope'],
+            )
+        );
+
         $response = wp_remote_post($url, array(
             'body' => $body,
             'timeout' => 45,
@@ -50,6 +80,19 @@ class PartnerCenterConnector implements IExternalDataConnector {
 
         if ($code === 200 && isset($payload['access_token'])) {
             set_transient($cache_key, $payload['access_token'], 50 * MINUTE_IN_SECONDS);
+            $token_payload = $this->decodeJwtPayload($payload['access_token']);
+            M365_LM_Database::log_event(
+                'info',
+                'partner_auth_debug',
+                'Partner token diagnostics',
+                null,
+                array(
+                    'aud'   => $token_payload['aud'] ?? null,
+                    'tid'   => $token_payload['tid'] ?? null,
+                    'appid' => $token_payload['appid'] ?? null,
+                    'roles' => $token_payload['roles'] ?? null,
+                )
+            );
             return array('success' => true, 'token' => $payload['access_token']);
         }
 
