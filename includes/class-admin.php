@@ -1,6 +1,7 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+if (!class_exists('M365_LM_Admin')) {
 class M365_LM_Admin {
     
     public function __construct() {
@@ -15,6 +16,10 @@ class M365_LM_Admin {
         add_action('wp_ajax_nopriv_kbbm_generate_script', array($this, 'ajax_generate_script'));
         add_action('wp_ajax_kbbm_save_settings', array($this, 'ajax_save_settings'));
         add_action('wp_ajax_kbbm_add_tenant', array($this, 'ajax_add_tenant'));
+        add_action('wp_ajax_kbbm_partner_test', array($this, 'ajax_partner_test'));
+        add_action('wp_ajax_kbbm_partner_sync_customers', array($this, 'ajax_partner_sync_customers'));
+        add_action('wp_ajax_kbbm_partner_sync_licenses', array($this, 'ajax_partner_sync_licenses'));
+        add_action('admin_post_kbbm_partner_authorize', array($this, 'handle_partner_authorize'));
     }
     
     // הוספת תפריט ניהול
@@ -64,6 +69,7 @@ class M365_LM_Admin {
         }
         
         wp_enqueue_style('m365-lm-admin-style', M365_LM_PLUGIN_URL . 'assets/style.css', array(), M365_LM_VERSION);
+        wp_enqueue_style('m365-lm-admin-table-style', M365_LM_PLUGIN_URL . 'assets/admin.css', array('m365-lm-admin-style'), M365_LM_VERSION);
         wp_enqueue_script('m365-lm-admin-script', M365_LM_PLUGIN_URL . 'assets/script.js', array('jquery'), M365_LM_VERSION, true);
         wp_localize_script('m365-lm-admin-script', 'm365Ajax', array(
             'ajaxurl' => admin_url('admin-ajax.php'),
@@ -179,7 +185,8 @@ class M365_LM_Admin {
             'tenant_id' => sanitize_text_field($_POST['tenant_id']),
             'client_id' => sanitize_text_field($_POST['client_id']),
             'client_secret' => sanitize_textarea_field($_POST['client_secret']),
-            'tenant_domain' => sanitize_text_field($_POST['tenant_domain'])
+            'tenant_domain' => sanitize_text_field($_POST['tenant_domain']),
+            'is_self_paying' => isset($_POST['is_self_paying']) ? 1 : 0,
         );
 
         $tenants_json = isset($_POST['tenants']) ? wp_unslash($_POST['tenants']) : '[]';
@@ -204,7 +211,7 @@ class M365_LM_Admin {
                 'client_id'       => sanitize_text_field($tenant['client_id'] ?? ''),
                 'client_secret'   => sanitize_textarea_field($tenant['client_secret'] ?? ''),
                 'tenant_domain'   => sanitize_text_field($tenant['tenant_domain'] ?? ''),
-                'api_expiry_date' => sanitize_text_field($tenant['api_expiry_date'] ?? ''),
+                'api_expiry_date' => self::normalize_api_expiry_date($tenant['api_expiry_date'] ?? ''),
             );
         }
 
@@ -246,6 +253,7 @@ class M365_LM_Admin {
         $client_id     = sanitize_text_field($_POST['client_id'] ?? '');
         $client_secret = sanitize_textarea_field($_POST['client_secret'] ?? '');
         $tenant_domain = sanitize_text_field($_POST['tenant_domain'] ?? '');
+        $api_expiry    = self::normalize_api_expiry_date($_POST['api_expiry_date'] ?? '');
 
         if ($tenant_id === '') {
             wp_send_json_error(array('message' => 'Tenant ID נדרש'));
@@ -268,7 +276,7 @@ class M365_LM_Admin {
             'client_id'     => $client_id,
             'client_secret' => $client_secret,
             'tenant_domain' => $tenant_domain,
-            'api_expiry_date' => sanitize_text_field($_POST['api_expiry_date'] ?? ''),
+            'api_expiry_date' => $api_expiry,
         );
 
         M365_LM_Database::replace_customer_tenants($customer_id, $clean);
@@ -291,7 +299,25 @@ class M365_LM_Admin {
             wp_send_json_error(array('message' => 'לקוח לא נמצא'));
         }
     }
-    
+
+    /**
+     * Adds 2 years to a given date string and returns it as Y-m-d.
+     */
+    private static function normalize_api_expiry_date($raw_date) {
+        $raw_date = isset($raw_date) ? trim((string) $raw_date) : '';
+        if ($raw_date === '') {
+            return '';
+        }
+
+        try {
+            $dt = new DateTime($raw_date);
+            $dt->modify('+2 years');
+            return $dt->format('Y-m-d');
+        } catch (Exception $e) {
+            return sanitize_text_field($raw_date);
+        }
+    }
+
     // AJAX - מחיקת לקוח
     public function ajax_delete_customer() {
         check_ajax_referer('m365_nonce', 'nonce');
@@ -377,8 +403,32 @@ class M365_LM_Admin {
         $retention_days = $retention_days > 0 ? $retention_days : 120;
         $use_test_server = isset($_POST['use_test_server']) ? (int) $_POST['use_test_server'] : 0;
 
+        $warning_days = isset($_POST['api_expiry_warning_days']) ? intval($_POST['api_expiry_warning_days']) : 60;
+        $danger_days  = isset($_POST['api_expiry_danger_days']) ? intval($_POST['api_expiry_danger_days']) : 30;
+
+        $warning_days = $warning_days >= 0 ? $warning_days : 60;
+        $danger_days  = $danger_days >= 0 ? $danger_days : 30;
+
+        $partner_enabled = isset($_POST['partner_enabled']) ? 1 : 0;
+        $partner_tenant_id = sanitize_text_field($_POST['partner_tenant_id'] ?? '');
+        $partner_client_id = sanitize_text_field($_POST['partner_client_id'] ?? '');
+        $partner_client_secret = sanitize_textarea_field($_POST['partner_client_secret'] ?? '');
+        $partner_environment = sanitize_text_field($_POST['partner_environment'] ?? 'production');
+        $graph_enabled = isset($_POST['graph_enabled']) ? 1 : 0;
+
         update_option('kbbm_log_retention_days', $retention_days);
         update_option('kbbm_use_test_server', $use_test_server);
+        update_option('kbbm_expiry_warning_days', $warning_days);
+        update_option('kbbm_expiry_danger_days', $danger_days);
+        update_option('kbbm_partner_enabled', $partner_enabled);
+        update_option('kbbm_partner_tenant_id', $partner_tenant_id);
+        update_option('kbbm_partner_client_id', $partner_client_id);
+        update_option('kbbm_partner_environment', $partner_environment);
+        update_option('kbbm_graph_enabled', $graph_enabled);
+
+        if (!empty($partner_client_secret)) {
+            update_option('kbbm_partner_client_secret', $partner_client_secret);
+        }
 
         // בצע ניקוי מיידי בהתאם לערך המעודכן
         M365_LM_Database::prune_logs($retention_days);
@@ -387,8 +437,238 @@ class M365_LM_Admin {
             'message' => 'ההגדרות נשמרו בהצלחה',
             'log_retention_days' => $retention_days,
             'use_test_server' => $use_test_server,
+            'api_expiry_warning_days' => $warning_days,
+            'api_expiry_danger_days' => $danger_days,
+            'partner_enabled' => $partner_enabled,
+            'graph_enabled' => $graph_enabled,
         ));
     }
+
+    private function build_partner_connector() {
+        $tenant_id = get_option('kbbm_partner_tenant_id', '');
+        $client_id = get_option('kbbm_partner_client_id', '');
+        $client_secret = get_option('kbbm_partner_client_secret', '');
+        $environment = get_option('kbbm_partner_environment', 'production');
+
+        return new PartnerCenterConnector($tenant_id, $client_id, $client_secret, $environment);
+    }
+
+    private function build_graph_connector() {
+        $tenant_id = get_option('kbbm_partner_tenant_id', '');
+        $client_id = get_option('kbbm_partner_client_id', '');
+        $client_secret = get_option('kbbm_partner_client_secret', '');
+        return new GraphGdapConnector($tenant_id, $client_id, $client_secret);
+    }
+
+    private function build_sync_service() {
+        $partner_enabled = (int) get_option('kbbm_partner_enabled', 0) === 1;
+        $graph_enabled = (int) get_option('kbbm_graph_enabled', 0) === 1;
+
+        return new M365_LM_Sync_Service(
+            $this->build_partner_connector(),
+            $this->build_graph_connector(),
+            $partner_enabled,
+            $graph_enabled
+        );
+    }
+
+    private function log_partner_result($context, $result, $extra = array()) {
+        $body_snippet = '';
+        if (!empty($result['body'])) {
+            $body_snippet = substr(wp_json_encode($result['body']), 0, 500);
+        }
+        $body_raw = $result['body_raw'] ?? null;
+        $headers = $result['headers'] ?? null;
+        $data = array_merge($extra, array(
+            'http_code' => $result['code'] ?? null,
+            'body_snippet' => $body_snippet,
+            'body_raw' => $body_raw,
+            'response_headers' => $headers,
+        ));
+        $message = $result['message'] ?? ($result['success'] ? 'OK' : 'Failed');
+        M365_LM_Database::log_event('info', $context, $message, null, $data);
+    }
+
+    public function ajax_partner_test() {
+        check_ajax_referer('m365_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'אין הרשאה'));
+        }
+
+        $connector = $this->build_partner_connector();
+        $result = $connector->getAccessToken();
+        $this->log_partner_result('partner_auth', $result);
+
+        if (!empty($result['success'])) {
+            wp_send_json_success(array('message' => 'Partner connection OK'));
+        }
+
+        wp_send_json_error(array('message' => $result['message'] ?? 'Partner connection failed'));
+    }
+
+    public function ajax_partner_sync_customers() {
+        check_ajax_referer('m365_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'אין הרשאה'));
+        }
+
+        $service = $this->build_sync_service();
+        $result = $service->syncCustomers();
+
+        if (!empty($result['http'])) {
+            $this->log_partner_result('partner_sync_customers', $result['http'], array('count' => $result['count'] ?? 0));
+        }
+
+        if (!empty($result['success'])) {
+            wp_send_json_success(array('message' => 'סנכרון לקוחות הושלם', 'count' => $result['count'] ?? 0));
+        }
+
+        wp_send_json_error(array('message' => $result['message'] ?? 'שגיאה בסנכרון לקוחות'));
+    }
+
+    public function ajax_partner_sync_licenses() {
+        check_ajax_referer('m365_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'אין הרשאה'));
+        }
+
+        $service = $this->build_sync_service();
+        $result = $service->syncLicenses();
+
+        if (!empty($result['success'])) {
+            wp_send_json_success(array('message' => 'סנכרון רישיונות הושלם', 'count' => $result['count'] ?? 0));
+        }
+
+        wp_send_json_error(array('message' => $result['message'] ?? 'שגיאה בסנכרון רישיונות'));
+    }
+
+    public function handle_partner_authorize() {
+        if (!current_user_can('manage_options')) {
+            wp_die('אין הרשאה');
+        }
+
+        $tenant_id = sanitize_text_field(get_option('kbbm_partner_tenant_id', ''));
+        $client_id = sanitize_text_field(get_option('kbbm_partner_client_id', ''));
+        $client_secret = get_option('kbbm_partner_client_secret', '');
+        $redirect_uri = admin_url('admin-post.php?action=kbbm_partner_authorize');
+        $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
+
+        M365_LM_Database::log_event(
+            'info',
+            'partner_auth_debug',
+            'Authorize Partner invoked',
+            null,
+            array(
+                'has_code' => isset($_GET['code']) ? 1 : 0,
+                'tenant_id' => $tenant_id ? substr($tenant_id, 0, 3) . '***' . substr($tenant_id, -3) : null,
+                'client_id' => $client_id ? substr($client_id, 0, 3) . '***' . substr($client_id, -3) : null,
+            )
+        );
+
+        if (isset($_GET['code'])) {
+            $state = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
+            if (empty($state) || !wp_verify_nonce($state, 'kbbm_partner_oauth_state')) {
+                wp_safe_redirect(add_query_arg('partner_auth', 'invalid_state', $return_url));
+                exit;
+            }
+
+            $code = sanitize_text_field(wp_unslash($_GET['code']));
+            $token_url = sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/token', $tenant_id);
+            $body = array(
+                'client_id' => $client_id,
+                'client_secret' => $client_secret,
+                'grant_type' => 'authorization_code',
+                'code' => $code,
+                'redirect_uri' => $redirect_uri,
+                'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
+            );
+
+            M365_LM_Database::log_event(
+                'info',
+                'partner_auth_debug',
+                'Partner authorization code exchange',
+                null,
+                array(
+                    'token_url' => $token_url,
+                    'is_v2' => strpos($token_url, '/oauth2/v2.0/') !== false,
+                    'scope' => $body['scope'],
+                )
+            );
+
+            $response = wp_remote_post($token_url, array(
+                'body' => $body,
+                'timeout' => 30,
+            ));
+
+            if (is_wp_error($response)) {
+                M365_LM_Database::log_event(
+                    'error',
+                    'partner_auth_debug',
+                    'Partner auth code exchange failed',
+                    null,
+                    array('error' => $response->get_error_message())
+                );
+                wp_safe_redirect(add_query_arg('partner_auth', 'request_failed', $return_url));
+                exit;
+            }
+
+            $code_status = wp_remote_retrieve_response_code($response);
+            $body_raw = wp_remote_retrieve_body($response);
+            $payload = json_decode($body_raw, true);
+
+            if ($code_status >= 200 && $code_status < 300 && !empty($payload['refresh_token'])) {
+                update_option('kbbm_partner_refresh_token', $payload['refresh_token']);
+                wp_safe_redirect(add_query_arg('partner_auth', 'success', $return_url));
+                exit;
+            }
+
+            M365_LM_Database::log_event(
+                'error',
+                'partner_auth_debug',
+                'Partner auth code exchange returned no refresh token',
+                null,
+                array(
+                    'status' => $code_status,
+                    'body' => $payload,
+                )
+            );
+
+            wp_safe_redirect(add_query_arg('partner_auth', 'missing_refresh_token', $return_url));
+            exit;
+        }
+
+        check_admin_referer('kbbm_partner_authorize');
+
+        if (empty($tenant_id) || empty($client_id) || empty($client_secret)) {
+            wp_safe_redirect(add_query_arg('partner_auth', 'missing_credentials', $return_url));
+            exit;
+        }
+
+        $state = wp_create_nonce('kbbm_partner_oauth_state');
+        $authorize_url = add_query_arg(array(
+            'client_id' => $client_id,
+            'response_type' => 'code',
+            'redirect_uri' => $redirect_uri,
+            'response_mode' => 'query',
+            'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
+            'state' => $state,
+        ), sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/authorize', $tenant_id));
+
+        M365_LM_Database::log_event(
+            'info',
+            'partner_auth_debug',
+            'Redirecting to Microsoft authorize',
+            null,
+            array('authorize_url' => $authorize_url)
+        );
+
+        wp_safe_redirect($authorize_url);
+        exit;
+    }
+}
 }
 
 /**
