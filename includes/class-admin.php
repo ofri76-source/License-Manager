@@ -558,11 +558,15 @@ class M365_LM_Admin {
     }
 
     public function maybe_handle_partner_callback() {
-        if ((int) get_query_var('kbbm_partner_callback') !== 1) {
-            return;
-        }
-
+        if (!isset($_GET['kbbm_partner_callback']) || $_GET['kbbm_partner_callback'] !== '1') return;
+        add_filter('redirect_canonical', '__return_false', 999);
+        M365_LM_Database::log_event('info','partner_auth_debug','maybe_handle_partner_callback fired',null,array(
+            'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+            'has_code' => isset($_GET['code']) ? 1 : 0,
+            'has_error' => isset($_GET['error']) ? 1 : 0,
+        ));
         $this->handle_partner_callback();
+        exit;
     }
 
     public function handle_partner_authorize() {
