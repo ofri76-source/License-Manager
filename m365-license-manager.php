@@ -35,8 +35,8 @@ add_action('admin_post_nopriv_kbbm_download_script', 'kbbm_download_script_handl
 
 add_action('admin_init', function () {
     if (isset($_GET['code']) || isset($_GET['error'])) {
-        M365_LM_Database::log_event('info', 'partner_auth_debug', 'OAuth returned to admin', null, array(
-            'url'   => (is_ssl() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? ''),
+        M365_LM_Database::log_event('info', 'partner_auth_debug', 'OAuth returned', null, array(
+            'uri'   => $_SERVER['REQUEST_URI'] ?? '',
             'code'  => isset($_GET['code']) ? 1 : 0,
             'error' => isset($_GET['error']) ? sanitize_text_field(wp_unslash($_GET['error'])) : null,
             'desc'  => isset($_GET['error_description']) ? sanitize_text_field(wp_unslash($_GET['error_description'])) : null,

@@ -578,19 +578,16 @@ class M365_LM_Admin {
 
         $state = wp_generate_password(20, false, false);
         set_transient('kbbm_partner_oauth_state', $state, 10 * MINUTE_IN_SECONDS);
-        $authorize_url = sprintf(
-            'https://login.microsoftonline.com/%s/oauth2/v2.0/authorize?%s',
-            rawurlencode($tenant_id),
-            http_build_query(array(
-                'client_id' => $client_id,
-                'response_type' => 'code',
-                'redirect_uri' => $redirect_uri,
-                'response_mode' => 'query',
-                'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
-                'state' => $state,
-                'prompt' => 'consent',
-            ))
-        );
+        $auth_base = "https://login.microsoftonline.com/{$tenant_id}/oauth2/v2.0/authorize";
+        $authorize_url = $auth_base . '?' . http_build_query(array(
+            'client_id' => $client_id,
+            'response_type' => 'code',
+            'redirect_uri' => $redirect_uri,
+            'response_mode' => 'query',
+            'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
+            'state' => $state,
+            'prompt' => 'consent',
+        ));
 
         M365_LM_Database::log_event(
             'info',
