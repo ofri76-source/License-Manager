@@ -16,6 +16,7 @@
         $partner_refresh_token = get_option('kbbm_partner_refresh_token', '');
         $partner_auth_status = isset($_GET['partner_auth']) ? sanitize_text_field(wp_unslash($_GET['partner_auth'])) : '';
         $partner_authorize_url = wp_nonce_url(admin_url('admin-post.php?action=kbbm_partner_authorize'), 'kbbm_partner_authorize');
+        $partner_redirect_uri = add_query_arg('kbbm_partner_callback', '1', home_url('/'));
 
         if (!function_exists('kbbm_format_api_expiry')) {
             function kbbm_format_api_expiry($date_value) {
@@ -401,6 +402,10 @@
                     <button type="button" id="kbbm-partner-test" class="m365-btn m365-btn-secondary">Test Partner Connection</button>
                     <button type="button" id="kbbm-partner-sync-customers" class="m365-btn m365-btn-secondary">Sync Customers</button>
                     <button type="button" id="kbbm-partner-sync-licenses" class="m365-btn m365-btn-secondary">Sync Licenses</button>
+                </div>
+                <div class="form-group">
+                    <label>Partner Redirect URI (העתקה ל-Entra ID)</label>
+                    <input type="text" readonly value="<?php echo esc_url($partner_redirect_uri); ?>" />
                 </div>
                 <div class="form-group">
                     <small>
