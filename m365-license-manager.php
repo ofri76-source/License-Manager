@@ -15,12 +15,14 @@ define('M365_LM_VERSION', '1.0.1');
 define('M365_LM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('M365_LM_PLUGIN_URL', plugin_dir_url(__FILE__));
 if (!defined('M365_LM_DISPLAY_VERSION')) {
-    define('M365_LM_DISPLAY_VERSION', '17.18.55');
+    define('M365_LM_DISPLAY_VERSION', '17.21.00');
 }
 
 // טעינת קבצים נדרשים
 require_once M365_LM_PLUGIN_DIR . 'includes/class-database.php';
 require_once M365_LM_PLUGIN_DIR . 'includes/class-api-connector.php';
+require_once M365_LM_PLUGIN_DIR . 'includes/class-external-connector.php';
+require_once M365_LM_PLUGIN_DIR . 'includes/class-sync-service.php';
 require_once M365_LM_PLUGIN_DIR . 'includes/class-shortcodes.php';
 require_once M365_LM_PLUGIN_DIR . 'includes/class-admin.php';
 
@@ -30,6 +32,18 @@ add_action('wp_ajax_kbbm_save_customer', ['M365_LM_Admin', 'ajax_save_customer']
 
 add_action('admin_post_kbbm_download_script', 'kbbm_download_script_handler');
 add_action('admin_post_nopriv_kbbm_download_script', 'kbbm_download_script_handler');
+
+add_action('admin_init', function () {
+    if (isset($_GET['code']) || isset($_GET['error'])) {
+        M365_LM_Database::log_event('info', 'partner_auth_debug', 'OAuth returned', null, array(
+            'uri'   => $_SERVER['REQUEST_URI'] ?? '',
+            'code'  => isset($_GET['code']) ? 1 : 0,
+            'error' => isset($_GET['error']) ? sanitize_text_field(wp_unslash($_GET['error'])) : null,
+            'desc'  => isset($_GET['error_description']) ? sanitize_text_field(wp_unslash($_GET['error_description'])) : null,
+            'state' => isset($_GET['state']) ? sanitize_text_field(wp_unslash($_GET['state'])) : null,
+        ));
+    }
+});
 
 // קישורי ניווט בין סביבות שרת אמת ושרת טסט
 if (!function_exists('kbbm_get_portal_urls')) {
