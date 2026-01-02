@@ -632,6 +632,10 @@ class M365_LM_Admin {
         $this->log_partner_debug('Redirecting to Microsoft authorize', [
             'authorize_url_len' => strlen($authorize_url),
             'state_prefix' => substr($state, 0, 8),
+            'redirect_uri' => $redirect_uri,
+            'host' => $_SERVER['HTTP_HOST'] ?? null,
+            'scheme' => is_ssl() ? 'https' : 'http',
+            'tenant_id_prefix' => $tenant_id ? substr($tenant_id, 0, 6) : null,
         ]);
 
         wp_safe_redirect($authorize_url);
