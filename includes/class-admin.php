@@ -21,7 +21,7 @@ class M365_LM_Admin {
         add_action('wp_ajax_kbbm_partner_sync_licenses', array($this, 'ajax_partner_sync_licenses'));
         add_action('admin_post_kbbm_partner_authorize', array($this, 'handle_partner_authorize'));
         add_action('admin_post_kbbm_partner_callback', array($this, 'handle_partner_callback'));
-        add_action('init', array($this, 'maybe_handle_partner_callback'));
+        add_action('init', array($this, 'maybe_handle_partner_callback'), 0);
         add_filter('query_vars', array($this, 'register_partner_query_vars'));
     }
     
@@ -569,6 +569,12 @@ class M365_LM_Admin {
         header('Pragma: no-cache');
         M365_LM_Database::log_event('info','partner_auth_debug','maybe_handle_partner_callback fired',null,array(
             'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+            'method' => $_SERVER['REQUEST_METHOD'] ?? null,
+            'query_string' => $_SERVER['QUERY_STRING'] ?? null,
+            'content_type' => $_SERVER['CONTENT_TYPE'] ?? null,
+            'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'referer' => $_SERVER['HTTP_REFERER'] ?? null,
             'has_code' => isset($_GET['code']) ? 1 : 0,
             'has_error' => isset($_GET['error']) ? 1 : 0,
         ));
@@ -629,6 +635,19 @@ class M365_LM_Admin {
             'state' => $state,
         ], sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/authorize', rawurlencode($tenant_id)));
 
+        $authorize_parts = wp_parse_url($authorize_url);
+        $authorize_query_keys = array();
+        $authorize_redirect_uri = null;
+        $authorize_response_mode = null;
+        $authorize_state_len = null;
+        if (!empty($authorize_parts['query'])) {
+            parse_str($authorize_parts['query'], $authorize_query);
+            $authorize_query_keys = array_keys($authorize_query);
+            $authorize_redirect_uri = $authorize_query['redirect_uri'] ?? null;
+            $authorize_response_mode = $authorize_query['response_mode'] ?? null;
+            $authorize_state_len = isset($authorize_query['state']) ? strlen((string) $authorize_query['state']) : null;
+        }
+
         $this->log_partner_debug('Redirecting to Microsoft authorize', [
             'authorize_url_len' => strlen($authorize_url),
             'state_prefix' => substr($state, 0, 8),
@@ -636,6 +655,10 @@ class M365_LM_Admin {
             'host' => $_SERVER['HTTP_HOST'] ?? null,
             'scheme' => is_ssl() ? 'https' : 'http',
             'tenant_id_prefix' => $tenant_id ? substr($tenant_id, 0, 6) : null,
+            'authorize_query_keys' => $authorize_query_keys,
+            'authorize_redirect_uri' => $authorize_redirect_uri,
+            'authorize_response_mode' => $authorize_response_mode,
+            'authorize_state_len' => $authorize_state_len,
         ]);
 
         wp_safe_redirect($authorize_url);
@@ -661,6 +684,12 @@ class M365_LM_Admin {
             'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? null,
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
             'referer' => $_SERVER['HTTP_REFERER'] ?? null,
+            'method' => $_SERVER['REQUEST_METHOD'] ?? null,
+            'content_type' => $_SERVER['CONTENT_TYPE'] ?? null,
+            'has_get_code' => isset($_GET['code']) ? 1 : 0,
+            'has_post_code' => isset($_POST['code']) ? 1 : 0,
+            'has_get_state' => isset($_GET['state']) ? 1 : 0,
+            'has_post_state' => isset($_POST['state']) ? 1 : 0,
             'state_prefix' => $state_received ? substr($state_received, 0, 8) : '',
             'state_len' => strlen($state_received),
             'code_len' => strlen($code),
