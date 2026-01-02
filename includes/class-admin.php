@@ -549,7 +549,9 @@ class M365_LM_Admin {
     }
 
     private function get_partner_callback_url() {
-        return add_query_arg('kbbm_partner_callback', '1', home_url('/'));
+        $scheme = is_ssl() ? 'https' : 'http';
+        $base_url = set_url_scheme(home_url('/'), $scheme);
+        return add_query_arg('kbbm_partner_callback', '1', $base_url);
     }
 
     public function register_partner_query_vars($vars) {
@@ -560,6 +562,9 @@ class M365_LM_Admin {
     public function maybe_handle_partner_callback() {
         if (!isset($_GET['kbbm_partner_callback']) || $_GET['kbbm_partner_callback'] !== '1') return;
         add_filter('redirect_canonical', '__return_false', 999);
+        nocache_headers();
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
         M365_LM_Database::log_event('info','partner_auth_debug','maybe_handle_partner_callback fired',null,array(
             'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
             'has_code' => isset($_GET['code']) ? 1 : 0,
@@ -579,6 +584,8 @@ class M365_LM_Admin {
         $client_secret = get_option('kbbm_partner_client_secret', '');
         $redirect_uri = $this->get_partner_callback_url();
         $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
+        $callback_host = wp_parse_url($redirect_uri, PHP_URL_HOST);
+        $callback_scheme = wp_parse_url($redirect_uri, PHP_URL_SCHEME);
 
         M365_LM_Database::log_event(
             'info',
@@ -599,8 +606,11 @@ class M365_LM_Admin {
             exit;
         }
 
-        $state = wp_generate_password(20, false, false);
-        set_transient('kbbm_partner_oauth_state_' . $state, time(), 10 * MINUTE_IN_SECONDS);
+        $state = wp_generate_password(32, false, false);
+        set_transient('kbbm_oauth_state_' . $state, array(
+            'created' => time(),
+            'return_url' => $return_url,
+        ), 10 * MINUTE_IN_SECONDS);
         $auth_base = "https://login.microsoftonline.com/{$tenant_id}/oauth2/v2.0/authorize";
         $authorize_url = $auth_base . '?' . http_build_query(array(
             'client_id' => $client_id,
@@ -617,7 +627,13 @@ class M365_LM_Admin {
             'partner_auth_debug',
             'Redirecting to Microsoft authorize',
             null,
-            array('authorize_url' => $authorize_url)
+            array(
+                'authorize_url' => $authorize_url,
+                'state_generated' => $state,
+                'redirect_uri' => $redirect_uri,
+                'host' => $callback_host,
+                'scheme' => $callback_scheme,
+            )
         );
 
         wp_safe_redirect($authorize_url);
@@ -641,6 +657,7 @@ class M365_LM_Admin {
                 'has_code' => isset($_GET['code']) ? 1 : 0,
                 'has_error' => isset($_GET['error']) ? 1 : 0,
                 'state_received' => sanitize_text_field(wp_unslash($_GET['state'] ?? '')),
+                'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
                 'scheme' => is_ssl() ? 'https' : 'http',
                 'host' => $home_host,
                 'is_user_logged_in' => is_user_logged_in(),
@@ -665,13 +682,26 @@ class M365_LM_Admin {
         }
 
         $state_received = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
-        $state_key = $state_received ? 'kbbm_partner_oauth_state_' . $state_received : '';
-        $state_expected = $state_key ? get_transient($state_key) : false;
+        $state_key = $state_received ? 'kbbm_oauth_state_' . $state_received : '';
+        $state_payload = $state_key ? get_transient($state_key) : false;
+        $transient_found = !empty($state_payload);
         if ($state_key) {
             delete_transient($state_key);
         }
 
-        if (empty($state_received) || empty($state_expected)) {
+        M365_LM_Database::log_event(
+            'info',
+            'partner_auth_debug',
+            'Partner callback state check',
+            null,
+            array(
+                'state_received' => $state_received,
+                'transient_found' => $transient_found ? 1 : 0,
+                'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+            )
+        );
+
+        if (empty($state_received) || empty($state_payload)) {
             wp_safe_redirect(add_query_arg('partner_auth', 'invalid_state', $return_url));
             exit;
         }
