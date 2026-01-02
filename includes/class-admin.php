@@ -588,6 +588,20 @@ class M365_LM_Admin {
         $client_secret = (string) get_option('kbbm_partner_client_secret', '');
         $redirect_uri = $this->get_partner_redirect_uri();
         $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
+        $query_string = isset($_SERVER['QUERY_STRING']) ? sanitize_text_field(wp_unslash($_SERVER['QUERY_STRING'])) : '';
+        $full_url = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(home_url($_SERVER['REQUEST_URI'])) : '';
+        $get_keys = array_keys($_GET);
+        $get_lengths = array();
+        foreach ($get_keys as $key) {
+            $value = $_GET[$key];
+            $value_str = is_scalar($value) ? (string) $value : '';
+            $get_lengths[$key] = strlen($value_str);
+        }
+        $state_received = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
+        $state_len = strlen($state_received);
+        $state_prefix = $state_received ? substr($state_received, 0, 8) : '';
+        $code_value = isset($_GET['code']) ? (string) wp_unslash($_GET['code']) : '';
+        $code_len = strlen($code_value);
 
         $this->log_partner_debug('Authorize Partner invoked', [
             'tenant_id_prefix' => $tenant_id ? substr($tenant_id, 0, 6) : null,
