@@ -22,6 +22,7 @@ class M365_LM_Admin {
         add_action('admin_post_kbbm_partner_authorize', array($this, 'handle_partner_authorize'));
         add_action('admin_post_kbbm_partner_callback', array($this, 'handle_partner_callback'));
         add_action('init', array($this, 'maybe_handle_partner_callback'), 0);
+        add_action('init', array($this, 'maybe_handle_oauth_probe'), 0);
         add_filter('query_vars', array($this, 'register_partner_query_vars'));
     }
     
@@ -549,7 +550,7 @@ class M365_LM_Admin {
     }
 
     private function get_partner_redirect_uri(): string {
-        return home_url('/?kbbm_partner_callback=1');
+        return home_url('/?kbbm_oauth_probe=1');
     }
 
     private function log_partner_debug(string $msg, array $data = []): void {
@@ -580,6 +581,52 @@ class M365_LM_Admin {
         ));
         $this->handle_partner_callback();
         exit;
+    }
+
+    public function maybe_handle_oauth_probe() {
+        if (!isset($_GET['kbbm_oauth_probe']) || $_GET['kbbm_oauth_probe'] !== '1') return;
+
+        add_filter('redirect_canonical', '__return_false', 999);
+        nocache_headers();
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+
+        $state_received = sanitize_text_field(wp_unslash($_REQUEST['state'] ?? ''));
+        $code = sanitize_text_field(wp_unslash($_REQUEST['code'] ?? ''));
+
+        $this->log_partner_debug('OAUTH PROBE HIT', [
+            'method' => $_SERVER['REQUEST_METHOD'] ?? null,
+            'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+            'query_string' => $_SERVER['QUERY_STRING'] ?? null,
+            'content_type' => $_SERVER['CONTENT_TYPE'] ?? null,
+            'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'referer' => $_SERVER['HTTP_REFERER'] ?? null,
+            'xf_proto' => $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null,
+            'xf_host' => $_SERVER['HTTP_X_FORWARDED_HOST'] ?? null,
+            'xf_for' => $_SERVER['HTTP_X_FORWARDED_FOR'] ?? null,
+            'get_keys' => array_keys($_GET),
+            'post_keys' => array_keys($_POST),
+            'cookie_keys' => array_keys($_COOKIE),
+            'state_prefix' => $state_received ? substr($state_received, 0, 8) : '',
+            'state_len' => strlen($state_received),
+            'code_len' => strlen($code),
+        ]);
+
+        if ($state_received !== '' && $code !== '') {
+            $callback_url = add_query_arg(
+                [
+                    'kbbm_partner_callback' => '1',
+                    'state' => $state_received,
+                    'code' => $code,
+                ],
+                home_url('/')
+            );
+            wp_safe_redirect($callback_url);
+            exit;
+        }
+
+        wp_die('OAUTH PROBE HIT');
     }
 
     public function handle_partner_authorize() {
