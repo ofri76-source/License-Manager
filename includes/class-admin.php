@@ -588,20 +588,6 @@ class M365_LM_Admin {
         $client_secret = (string) get_option('kbbm_partner_client_secret', '');
         $redirect_uri = $this->get_partner_redirect_uri();
         $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
-        $query_string = isset($_SERVER['QUERY_STRING']) ? sanitize_text_field(wp_unslash($_SERVER['QUERY_STRING'])) : '';
-        $full_url = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(home_url($_SERVER['REQUEST_URI'])) : '';
-        $get_keys = array_keys($_GET);
-        $get_lengths = array();
-        foreach ($get_keys as $key) {
-            $value = $_GET[$key];
-            $value_str = is_scalar($value) ? (string) $value : '';
-            $get_lengths[$key] = strlen($value_str);
-        }
-        $state_received = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
-        $state_len = strlen($state_received);
-        $state_prefix = $state_received ? substr($state_received, 0, 8) : '';
-        $code_value = isset($_GET['code']) ? (string) wp_unslash($_GET['code']) : '';
-        $code_len = strlen($code_value);
 
         $this->log_partner_debug('Authorize Partner invoked', [
             'tenant_id_prefix' => $tenant_id ? substr($tenant_id, 0, 6) : null,
@@ -619,9 +605,11 @@ class M365_LM_Admin {
 
         $state = bin2hex(random_bytes(16));
         $tkey  = 'kbbm_oauth_' . $state;
+        $payload = ['created' => time(), 'return_url' => $return_url];
 
-        set_transient($tkey, ['created' => time(), 'return_url' => $return_url], 15 * MINUTE_IN_SECONDS);
+        set_transient($tkey, $payload, 15 * MINUTE_IN_SECONDS);
         update_option('kbbm_last_state', $state, false);
+        update_option('kbbm_oauth_fallback_' . $state, $payload, false);
 
         $exists = get_transient($tkey) ? 1 : 0;
 
@@ -657,8 +645,8 @@ class M365_LM_Admin {
         $redirect_uri = $this->get_partner_redirect_uri();
         $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
 
-        $state_received = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
-        $code = sanitize_text_field(wp_unslash($_GET['code'] ?? ''));
+        $state_received = sanitize_text_field(wp_unslash($_REQUEST['state'] ?? ''));
+        $code = sanitize_text_field(wp_unslash($_REQUEST['code'] ?? ''));
 
         $this->log_partner_debug('Partner callback received', [
             'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
@@ -699,9 +687,13 @@ class M365_LM_Admin {
 
         $tkey = 'kbbm_oauth_' . $state_received;
         $st = get_transient($tkey);
+        if (empty($st)) {
+            $st = get_option('kbbm_oauth_fallback_' . $state_received, false);
+        }
 
         $last_state = (string) get_option('kbbm_last_state', '');
         $last_key = $last_state ? 'kbbm_oauth_' . $last_state : '';
+        $last_fallback_key = $last_state ? 'kbbm_oauth_fallback_' . $last_state : '';
 
         if (empty($st)) {
             $this->log_partner_debug('Partner callback invalid state', [
@@ -710,12 +702,14 @@ class M365_LM_Admin {
                 'last_state_prefix' => $last_state ? substr($last_state, 0, 8) : '',
                 'last_state_len' => strlen($last_state),
                 'last_state_exists' => $last_key ? (get_transient($last_key) ? 1 : 0) : 0,
+                'last_state_fallback_exists' => $last_fallback_key ? (get_option($last_fallback_key, false) ? 1 : 0) : 0,
             ]);
             wp_safe_redirect(add_query_arg('partner_auth', 'invalid_state', $return_url));
             exit;
         }
 
         delete_transient($tkey);
+        delete_option('kbbm_oauth_fallback_' . $state_received);
 
         $token_url = sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/token', rawurlencode($tenant_id));
         $body = array(
