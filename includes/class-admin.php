@@ -548,10 +548,12 @@ class M365_LM_Admin {
         wp_send_json_error(array('message' => $result['message'] ?? 'שגיאה בסנכרון רישיונות'));
     }
 
-    private function get_partner_redirect_uri() {
-        $scheme = is_ssl() ? 'https' : 'http';
-        $base_url = set_url_scheme(home_url('/'), $scheme);
-        return add_query_arg('kbbm_partner_callback', '1', $base_url);
+    private function get_partner_redirect_uri(): string {
+        return home_url('/?kbbm_partner_callback=1');
+    }
+
+    private function log_partner_debug(string $msg, array $data = []): void {
+        M365_LM_Database::log_event('info', 'partner_auth_debug', $msg, null, $data);
     }
 
     public function register_partner_query_vars($vars) {
@@ -579,88 +581,11 @@ class M365_LM_Admin {
             wp_die('אין הרשאה');
         }
 
-        $tenant_id = sanitize_text_field(get_option('kbbm_partner_tenant_id', ''));
-        $client_id = sanitize_text_field(get_option('kbbm_partner_client_id', ''));
-        $client_secret = get_option('kbbm_partner_client_secret', '');
-        $redirect_uri = $this->get_partner_redirect_uri();
-        $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
-        $callback_host = wp_parse_url($redirect_uri, PHP_URL_HOST);
-        $callback_scheme = wp_parse_url($redirect_uri, PHP_URL_SCHEME);
-
-        M365_LM_Database::log_event(
-            'info',
-            'partner_auth_debug',
-            'Authorize Partner invoked',
-            null,
-            array(
-                'has_code' => isset($_GET['code']) ? 1 : 0,
-                'tenant_id' => $tenant_id ? substr($tenant_id, 0, 3) . '***' . substr($tenant_id, -3) : null,
-                'client_id' => $client_id ? substr($client_id, 0, 3) . '***' . substr($client_id, -3) : null,
-            )
-        );
-
         check_admin_referer('kbbm_partner_authorize');
 
-        if (empty($tenant_id) || empty($client_id) || empty($client_secret)) {
-            wp_safe_redirect(add_query_arg('partner_auth', 'missing_credentials', $return_url));
-            exit;
-        }
-
-        $state = wp_generate_password(32, false, false);
-        $state_key = 'kbbm_oauth_' . $state;
-        set_transient($state_key, array(
-            'created' => time(),
-            'return_url' => $return_url,
-        ), 10 * MINUTE_IN_SECONDS);
-        update_option('kbbm_last_state', $state);
-        $state_prefix = substr($state, 0, 8);
-        $transient_verify = get_transient($state_key) ? 1 : 0;
-        $auth_base = "https://login.microsoftonline.com/{$tenant_id}/oauth2/v2.0/authorize";
-        $authorize_url_safe = $auth_base . '?' . http_build_query(array(
-            'client_id' => $client_id,
-            'response_type' => 'code',
-            'redirect_uri' => $redirect_uri,
-            'response_mode' => 'query',
-            'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
-            'state' => $state_prefix . '...',
-            'prompt' => 'consent',
-        ));
-        $authorize_url = $auth_base . '?' . http_build_query(array(
-            'client_id' => $client_id,
-            'response_type' => 'code',
-            'redirect_uri' => $redirect_uri,
-            'response_mode' => 'query',
-            'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
-            'state' => $state,
-            'prompt' => 'consent',
-        ));
-
-        M365_LM_Database::log_event(
-            'info',
-            'partner_auth_debug',
-            'Redirecting to Microsoft authorize',
-            null,
-            array(
-                'authorize_url' => $authorize_url,
-                'authorize_url_safe' => $authorize_url_safe,
-                'state_prefix' => $state_prefix,
-                'transient_key' => $state_key,
-                'transient_verify' => $transient_verify,
-                'redirect_uri' => $redirect_uri,
-                'return_url' => $return_url,
-                'host' => $callback_host,
-                'scheme' => $callback_scheme,
-            )
-        );
-
-        wp_safe_redirect($authorize_url);
-        exit;
-    }
-
-    public function handle_partner_callback() {
         $tenant_id = sanitize_text_field(get_option('kbbm_partner_tenant_id', ''));
         $client_id = sanitize_text_field(get_option('kbbm_partner_client_id', ''));
-        $client_secret = get_option('kbbm_partner_client_secret', '');
+        $client_secret = (string) get_option('kbbm_partner_client_secret', '');
         $redirect_uri = $this->get_partner_redirect_uri();
         $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
         $query_string = isset($_SERVER['QUERY_STRING']) ? sanitize_text_field(wp_unslash($_SERVER['QUERY_STRING'])) : '';
@@ -678,101 +603,121 @@ class M365_LM_Admin {
         $code_value = isset($_GET['code']) ? (string) wp_unslash($_GET['code']) : '';
         $code_len = strlen($code_value);
 
-        $home_host = wp_parse_url(home_url(), PHP_URL_HOST);
-        M365_LM_Database::log_event(
-            'info',
-            'partner_auth_debug',
-            'Partner callback received',
-            null,
-            array(
-                'has_code' => isset($_GET['code']) ? 1 : 0,
-                'has_error' => isset($_GET['error']) ? 1 : 0,
-                'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
-                'query_string' => $query_string,
-                'full_url' => $full_url,
-                'get_keys' => $get_keys,
-                'get_lengths' => $get_lengths,
-                'state_received_prefix' => $state_prefix,
-                'state_len' => $state_len,
-                'code_len' => $code_len,
-                'referer' => isset($_SERVER['HTTP_REFERER']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_REFERER'])) : null,
-                'user_agent' => isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : null,
-                'remote_addr' => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : null,
-                'forwarded_proto' => isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FORWARDED_PROTO'])) : null,
-                'forwarded_host' => isset($_SERVER['HTTP_X_FORWARDED_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FORWARDED_HOST'])) : null,
-                'cf_connecting_ip' => isset($_SERVER['HTTP_CF_CONNECTING_IP']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_CONNECTING_IP'])) : null,
-                'scheme' => is_ssl() ? 'https' : 'http',
-                'host' => $home_host,
-                'is_user_logged_in' => is_user_logged_in(),
-            )
-        );
+        $this->log_partner_debug('Authorize Partner invoked', [
+            'tenant_id_prefix' => $tenant_id ? substr($tenant_id, 0, 6) : null,
+            'client_id_prefix' => $client_id ? substr($client_id, 0, 6) : null,
+            'redirect_uri' => $redirect_uri,
+            'return_url' => $return_url,
+            'host' => $_SERVER['HTTP_HOST'] ?? null,
+            'scheme' => is_ssl() ? 'https' : 'http',
+        ]);
 
-        if (empty($_GET['state']) || empty($_GET['code'])) {
-            M365_LM_Database::log_event(
-                'warning',
-                'partner_auth_debug',
-                'Partner callback missing params',
-                null,
-                array(
-                    'has_state' => isset($_GET['state']) ? 1 : 0,
-                    'has_code' => isset($_GET['code']) ? 1 : 0,
-                    'state_len' => $state_len,
-                    'code_len' => $code_len,
-                )
-            );
-            wp_safe_redirect(add_query_arg('partner_auth', 'missing_params', $return_url));
+        if (empty($tenant_id) || empty($client_id) || empty($client_secret)) {
+            wp_safe_redirect(add_query_arg('partner_auth', 'missing_credentials', $return_url));
             exit;
         }
+
+        $state = bin2hex(random_bytes(16));
+        $tkey  = 'kbbm_oauth_' . $state;
+
+        set_transient($tkey, ['created' => time(), 'return_url' => $return_url], 15 * MINUTE_IN_SECONDS);
+        update_option('kbbm_last_state', $state, false);
+
+        $exists = get_transient($tkey) ? 1 : 0;
+
+        $this->log_partner_debug('State generated', [
+            'state_prefix' => substr($state, 0, 8),
+            'state_len' => strlen($state),
+            'transient_key' => $tkey,
+            'transient_exists' => $exists,
+        ]);
+
+        $authorize_url = add_query_arg([
+            'client_id' => $client_id,
+            'response_type' => 'code',
+            'redirect_uri' => $redirect_uri,
+            'response_mode' => 'query',
+            'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
+            'state' => $state,
+        ], sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/authorize', rawurlencode($tenant_id)));
+
+        $this->log_partner_debug('Redirecting to Microsoft authorize', [
+            'authorize_url_len' => strlen($authorize_url),
+            'state_prefix' => substr($state, 0, 8),
+        ]);
+
+        wp_safe_redirect($authorize_url);
+        exit;
+    }
+
+    public function handle_partner_callback() {
+        $tenant_id = sanitize_text_field(get_option('kbbm_partner_tenant_id', ''));
+        $client_id = sanitize_text_field(get_option('kbbm_partner_client_id', ''));
+        $client_secret = (string) get_option('kbbm_partner_client_secret', '');
+        $redirect_uri = $this->get_partner_redirect_uri();
+        $return_url = admin_url('admin.php?page=m365-customers&kbbm_tab=partner');
+
+        $state_received = sanitize_text_field(wp_unslash($_GET['state'] ?? ''));
+        $code = sanitize_text_field(wp_unslash($_GET['code'] ?? ''));
+
+        $this->log_partner_debug('Partner callback received', [
+            'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
+            'query_string' => $_SERVER['QUERY_STRING'] ?? null,
+            'host' => $_SERVER['HTTP_HOST'] ?? null,
+            'scheme' => is_ssl() ? 'https' : 'http',
+            'is_user_logged_in' => is_user_logged_in() ? 1 : 0,
+            'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'referer' => $_SERVER['HTTP_REFERER'] ?? null,
+            'state_prefix' => $state_received ? substr($state_received, 0, 8) : '',
+            'state_len' => strlen($state_received),
+            'code_len' => strlen($code),
+            'has_error' => isset($_GET['error']) ? 1 : 0,
+            'xf_proto' => $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null,
+            'xf_host' => $_SERVER['HTTP_X_FORWARDED_HOST'] ?? null,
+        ]);
 
         if (isset($_GET['error'])) {
             $error = sanitize_text_field(wp_unslash($_GET['error']));
             $error_description = sanitize_text_field(wp_unslash($_GET['error_description'] ?? ''));
-            M365_LM_Database::log_event(
-                'error',
-                'partner_auth_debug',
-                'Partner authorization error',
-                null,
-                array(
-                    'error' => $error,
-                    'error_description' => $error_description,
-                )
-            );
+            $this->log_partner_debug('Partner authorization error', [
+                'error' => $error,
+                'error_description' => $error_description,
+            ]);
             wp_safe_redirect(add_query_arg('partner_auth', 'auth_error', $return_url));
             exit;
         }
 
-        $state_key = 'kbbm_oauth_' . $state_received;
-        $state_payload = get_transient($state_key);
-        $transient_found = !empty($state_payload);
-        $last_state = get_option('kbbm_last_state', '');
-        $last_state_key = $last_state ? 'kbbm_oauth_' . $last_state : '';
-        $last_state_exists = $last_state ? (get_transient($last_state_key) ? 1 : 0) : 0;
+        if ($state_received === '' || $code === '') {
+            $this->log_partner_debug('Callback missing params', [
+                'missing_state' => $state_received === '' ? 1 : 0,
+                'missing_code' => $code === '' ? 1 : 0,
+            ]);
+            wp_safe_redirect(add_query_arg('partner_auth', 'missing_params', $return_url));
+            exit;
+        }
 
-        if (!$transient_found) {
-            M365_LM_Database::log_event(
-                'warning',
-                'partner_auth_debug',
-                'Partner callback invalid state',
-                null,
-                array(
-                    'state_received_prefix' => $state_prefix,
-                    'state_len' => $state_len,
-                    'transient_key' => $state_key,
-                    'transient_found' => 0,
-                    'last_state_prefix' => $last_state ? substr($last_state, 0, 8) : '',
-                    'last_state_len' => strlen($last_state),
-                    'last_state_exists' => $last_state_exists,
-                    'last_state_key' => $last_state_key,
-                )
-            );
+        $tkey = 'kbbm_oauth_' . $state_received;
+        $st = get_transient($tkey);
+
+        $last_state = (string) get_option('kbbm_last_state', '');
+        $last_key = $last_state ? 'kbbm_oauth_' . $last_state : '';
+
+        if (empty($st)) {
+            $this->log_partner_debug('Partner callback invalid state', [
+                'transient_key' => $tkey,
+                'transient_found' => 0,
+                'last_state_prefix' => $last_state ? substr($last_state, 0, 8) : '',
+                'last_state_len' => strlen($last_state),
+                'last_state_exists' => $last_key ? (get_transient($last_key) ? 1 : 0) : 0,
+            ]);
             wp_safe_redirect(add_query_arg('partner_auth', 'invalid_state', $return_url));
             exit;
         }
 
-        delete_transient($state_key);
+        delete_transient($tkey);
 
-        $code = sanitize_text_field(wp_unslash($_GET['code']));
-        $token_url = sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/token', $tenant_id);
+        $token_url = sprintf('https://login.microsoftonline.com/%s/oauth2/v2.0/token', rawurlencode($tenant_id));
         $body = array(
             'client_id' => $client_id,
             'client_secret' => $client_secret,
@@ -782,17 +727,11 @@ class M365_LM_Admin {
             'scope' => 'https://api.partnercenter.microsoft.com/user_impersonation offline_access',
         );
 
-        M365_LM_Database::log_event(
-            'info',
-            'partner_auth_debug',
-            'Partner authorization code exchange',
-            null,
-            array(
-                'token_url' => $token_url,
-                'is_v2' => strpos($token_url, '/oauth2/v2.0/') !== false,
-                'scope' => $body['scope'],
-            )
-        );
+        $this->log_partner_debug('Partner authorization code exchange', [
+            'token_url' => $token_url,
+            'redirect_uri' => $redirect_uri,
+            'scope' => $body['scope'],
+        ]);
 
         $response = wp_remote_post($token_url, array(
             'body' => $body,
@@ -800,38 +739,28 @@ class M365_LM_Admin {
         ));
 
         if (is_wp_error($response)) {
-            M365_LM_Database::log_event(
-                'error',
-                'partner_auth_debug',
-                'Partner auth code exchange failed',
-                null,
-                array('error' => $response->get_error_message())
-            );
+            $this->log_partner_debug('Partner auth code exchange failed', ['error' => $response->get_error_message()]);
             wp_safe_redirect(add_query_arg('partner_auth', 'request_failed', $return_url));
             exit;
         }
 
-        $code_status = wp_remote_retrieve_response_code($response);
-        $body_raw = wp_remote_retrieve_body($response);
-        $payload = json_decode($body_raw, true);
+        $status = wp_remote_retrieve_response_code($response);
+        $raw = wp_remote_retrieve_body($response);
+        $payload = json_decode($raw, true);
 
-        if ($code_status >= 200 && $code_status < 300 && !empty($payload['refresh_token'])) {
+        $this->log_partner_debug('Partner token response', [
+            'status' => $status,
+            'has_refresh_token' => !empty($payload['refresh_token']) ? 1 : 0,
+            'has_access_token' => !empty($payload['access_token']) ? 1 : 0,
+            'error' => $payload['error'] ?? null,
+            'error_description' => $payload['error_description'] ?? null,
+        ]);
+
+        if ($status >= 200 && $status < 300 && !empty($payload['refresh_token'])) {
             update_option('kbbm_partner_refresh_token', $payload['refresh_token']);
             wp_safe_redirect(add_query_arg('partner_auth', 'success', $return_url));
             exit;
         }
-
-        M365_LM_Database::log_event(
-            'error',
-            'partner_auth_debug',
-            'Partner auth code exchange returned no refresh token',
-            null,
-            array(
-                'status' => $code_status,
-                'body' => $payload,
-                'body_raw' => $body_raw,
-            )
-        );
 
         wp_safe_redirect(add_query_arg('partner_auth', 'missing_refresh_token', $return_url));
         exit;
